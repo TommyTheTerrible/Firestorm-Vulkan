@@ -2023,7 +2023,8 @@ void LLViewerParcelMgr::processParcelProperties(LLMessageSystem *msg, void **use
                             LLViewerRegion *region = LLWorld::getInstance()->getRegion(msg->getSender());
                             if (region)
                             {
-                                optionallyStartMusic(music_url, parcel->mLocalID, region->getRegionID(), !agent_parcel_update);
+                                if (gAudiop->getInternetStreamURL() != music_url) // <TS:3T> Stops unnecessary fades if new url same as what is playing.
+                                    optionallyStartMusic(music_url, parcel->mLocalID, region->getRegionID(), !agent_parcel_update);
                             }
                         }
                         else
