@@ -87,7 +87,8 @@ void LLViewerAudio::registerIdleListener()
 
 void LLViewerAudio::startInternetStreamWithAutoFade(const std::string &streamURI)
 {
-    if (gAudiop->getInternetStreamURL() == gAgent.mGroupStream)  // <TS:3T> No fading when on group stream.
+    if (!gAudiop->getInternetStreamURL().empty() &&
+        gAudiop->getInternetStreamURL() == gAgent.mGroupStream)  // <TS:3T> No fading when on group stream.
         return;
 
     LL_DEBUGS("AudioEngine") << "Start with outo fade: " << streamURI << LL_ENDL;
