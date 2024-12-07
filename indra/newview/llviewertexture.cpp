@@ -1947,7 +1947,7 @@ bool LLViewerFetchedTexture::updateFetch()
         if (finished)
         {
             mIsFetching = false;
-            mLastFetchState = -1;
+            //mLastFetchState = -1; <TS:3T> Do not reset, to keep track of last fetch response.
             mLastPacketTimer.reset();
             if (mIncomingChangeBits > 0)
             {
@@ -2248,6 +2248,7 @@ bool LLViewerFetchedTexture::updateFetch()
                        << " fetch_request_discard: " << (S32) fetch_request_discard << " sDesiredDiscardBias: " << LLViewerTexture::sDesiredDiscardBias
                        << LL_ENDL;
         }
+        mLastFetchState = fetch_request_discard;
         if (fetch_request_discard >= 0)
         {
             mLastUpdateFrame = LLViewerOctreeEntryData::getCurrentFrame();

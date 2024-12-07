@@ -364,6 +364,7 @@ public:
     void updateVirtualSize() ;
 
     S32  getDesiredDiscardLevel()            { return mDesiredDiscardLevel; }
+    S32  getLastFetchState()                 { return mLastFetchState; }
     void setMinDiscardLevel(S32 discard)    { mMinDesiredDiscardLevel = llmin(mMinDesiredDiscardLevel,(S8)discard); }
 
     void setBoostLevel(S32 level) override;
@@ -489,7 +490,7 @@ protected:
     S32 mRequestedDiscardLevel;
     F32 mRequestedDownloadPriority;
     S32 mFetchState;
-    S32 mLastFetchState = -1; // DEBUG
+    S32 mLastFetchState = -2; // DEBUG <TS:3T> Adjust to -2 because fetch_request can respond with -1.
     U32 mFetchPriority;
     F32 mDownloadProgress;
     F32 mFetchDeltaTime;
