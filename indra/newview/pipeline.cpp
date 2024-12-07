@@ -3537,6 +3537,23 @@ void LLPipeline::postSort(LLCamera &camera)
             {
                 group->rebuildGeom();
             }
+            if (LLViewerCamera::sCurCameraID == LLViewerCamera::CAMERA_WORLD && !gCubeSnapshot)
+            {
+                if (!group->getSpatialPartition()->isBridge())
+                {
+                    group->updateDistance(camera);
+                }
+                else
+                {
+                    LLSpatialBridge* bridge = group->getSpatialPartition()->asBridge();
+
+                    if (bridge)
+                    {
+                        LLCamera trans_camera = bridge->transformCamera(camera);
+                        group->updateDistance(trans_camera);
+                    }
+                }
+            }
         }
         LL_PUSH_CALLSTACKS();
         // rebuild groups
@@ -3598,6 +3615,7 @@ void LLPipeline::postSort(LLCamera &camera)
 
             if (alpha != group->mDrawMap.end())
             {  // store alpha groups for sorting
+                /* <TS:3T> Distance updates moved to the full loop, not just alpha pass.
                 LLSpatialBridge *bridge = group->getSpatialPartition()->asBridge();
                 if (LLViewerCamera::sCurCameraID == LLViewerCamera::CAMERA_WORLD && !gCubeSnapshot)
                 {
@@ -3611,7 +3629,7 @@ void LLPipeline::postSort(LLCamera &camera)
                         group->updateDistance(camera);
                     }
                 }
-
+                </TS:3T>*/
                 if (hasRenderType(LLDrawPool::POOL_ALPHA))
                 {
                     sCull->pushAlphaGroup(group);
