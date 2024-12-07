@@ -592,7 +592,7 @@ LLSpatialGroup::LLSpatialGroup(OctreeNode* node, LLSpatialPartition* part) : LLO
 {
     ll_assert_aligned(this,16);
 
-    sNodeCount++;
+    mNodeNum = sNodeCount++; // <TS:3T> Record spactial group's node number to help with debugging.
 
     mViewAngle.splat(0.f);
     mLastUpdateViewAngle.splat(-1.f);

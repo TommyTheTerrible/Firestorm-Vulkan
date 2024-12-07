@@ -376,6 +376,7 @@ public:
 
     F32 mPixelArea;
     F32 mRadius;
+    U32 mNodeNum; // <TS:3T> Record spactial group's node number to help with debugging.
 
     //used by LLVOAVatar to set render order in alpha draw pool to preserve legacy render order behavior
     LLVOAvatar* mAvatarp = nullptr;
