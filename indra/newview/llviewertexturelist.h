@@ -164,7 +164,7 @@ public:
 
     void clearFetchingRequests();
 
-    bool updateImageDecodePriority(LLViewerFetchedTexture *imagep);
+    bool updateImageDecodePriority(LLViewerFetchedTexture *imagep, bool check_faces = true);
 
 
   private:

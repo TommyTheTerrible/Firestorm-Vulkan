@@ -922,7 +922,7 @@ void LLViewerTextureList::clearFetchingRequests()
 
 extern bool gCubeSnapshot;
 
-bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imagep)
+bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imagep, bool check_faces)
 {
     //if (imagep->isInDebug() || imagep->isUnremovable())
     //{
@@ -939,11 +939,15 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
     S32 for_anim = 0;
     S32 for_hud = 0;
     S32 for_particle = 0;
+    U32 num_faces = 0;
 
     LL_PROFILE_ZONE_SCOPED_CATEGORY_TEXTURE
     {
         for (U32 i = 0; i < LLRender::NUM_TEXTURE_CHANNELS; i++)
         {
+            num_faces += imagep->getNumFaces(i);
+            if (!check_faces)
+                break;
             // Use parallelized generate to adjust virtual sizes for the faces and collect overall importance.
             std::vector<float> work(imagep->getNumFaces(i));
 #ifdef __cpp_lib_execution
@@ -990,26 +994,34 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
         //assignBoost += std::reduce(std::execution::par_unseq, work.begin(), work.end());
         }
     }
-    bool in_frustum = (assignImportance > 0);
-    // If texture is used for an animation, increase it's size
-    assignSize *= (float) llmax(pow((bool(for_anim) && in_frustum) * 2, 4), 1);
-    // Increase importance if used in an animation in frustum, a HUD or a particle.
-    assignImportance += (float) ((0.6 * (int) bool(for_anim) * (int) in_frustum) + (1 * (int)bool(for_hud)) + (1 * (int)bool(for_particle)));
-    // Assign BOOST_HIGH if used on a particle.
-    assignBoost += for_particle;
+    if (check_faces)
+    {
+        bool in_frustum = (assignImportance > 0);
+        // If texture is used for an animation, increase it's size
+        assignSize *= (float) llmax(pow((bool(for_anim) && in_frustum) * 2, 4), 1);
+        // Increase importance if used in an animation in frustum, a HUD or a particle.
+        assignImportance += (float) ((0.6 * (int) bool(for_anim) * (int) in_frustum) + (1 * (int)bool(for_hud)) + (1 * (int)bool(for_particle)));
+        // Assign BOOST_HIGH if used on a particle.
+        assignBoost += for_particle;
 
-    if (assignBoost > 0 && imagep->getBoostLevel() <= 0)
-        imagep->setBoostLevel(LLViewerTexture::BOOST_HIGH);
-    // Apply Discard Bias down-scale once after largest value found.
-    if (imagep->isForSculptOnly())
-        assignImportance++;
-    if (assignImportance < (float)llmax(((LLViewerTexture::sDesiredDiscardBias - 1) * 0.20), 0))
-        assignSize /= (float)llmax(pow((LLViewerTexture::sDesiredDiscardBias - 1), 4), 1);
-    // If the greatest virtual size is not -1, apply it and find out if a fetch is necessary (mMaxVirtualSize changed)
-    if (assignSize >= 0)
-        needs_fetch = imagep->addTextureStats(assignSize);
-    // Store the importance with the image to use for prioritization later.
-    imagep->setMaxFaceImportance(assignImportance);
+        if (assignBoost > 0 && imagep->getBoostLevel() <= 0)
+            imagep->setBoostLevel(LLViewerTexture::BOOST_HIGH);
+        if (imagep->getBoostLevel() > 0)
+            assignSize = MAX_IMAGE_AREA;
+        // Apply Discard Bias down-scale once after largest value found.
+        if (imagep->isForSculptOnly())
+            assignImportance++;
+        if (assignImportance < (float)llmax(((LLViewerTexture::sDesiredDiscardBias - 1) * 0.20), 0))
+            assignSize /= (float)llmax(pow((LLViewerTexture::sDesiredDiscardBias - 1), 4), 1);
+        if (for_hud > 0) // HUDs to use max image size
+            assignSize = MAX_IMAGE_AREA;
+        // If the greatest virtual size is not -1, apply it and find out if a fetch is necessary (mMaxVirtualSize changed)
+        if (assignSize >= 0)
+            needs_fetch = imagep->addTextureStats(assignSize);        
+        // Store the importance with the image to use for prioritization later.
+        imagep->setMaxFaceImportance(assignImportance);
+
+    }
 
     F32 lazy_flush_timeout = 30.f;  // Delete after n seconds, or 0 to not delete until VRAM threshold reached.
     F32 max_inactive_time  = 30.f;  // Stop making changes to texture after n seconds.
@@ -1019,7 +1031,8 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
     // Flush formatted images using a lazy flush
     //
     // Reset texture state if found on a face or not.
-    imagep->setInactive(assignSize > 0);
+    //imagep->setInactive(assignSize > 0);
+    imagep->setInactive(num_faces > 0);
     S32 num_refs = imagep->getNumRefs();
     if (num_refs <= min_refs)
     {
