@@ -65,6 +65,24 @@ enum ETexListType
     TEX_LIST_SCALE
 };
 
+struct vigna_hash
+{
+    static uint64_t splitmix64(uint64_t x)
+    {
+        // http://xorshift.di.unimi.it/splitmix64.c
+        x += 0x9e3779b97f4a7c15;
+        x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
+        x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
+        return x ^ (x >> 31);
+    }
+
+    size_t operator()(uint64_t x) const
+    {
+        static const uint64_t FIXED_RANDOM = std::chrono::steady_clock::now().time_since_epoch().count();
+        return splitmix64(x + FIXED_RANDOM);
+    }
+};
+
 struct LLTextureKey
 {
     LLTextureKey();
@@ -213,7 +231,7 @@ private:    // PoundLife - Improved Object Inspect
     { return getImage(image_id, f_type, true, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE, 0, 0, host); }
 
 public:
-    typedef std::unordered_set<LLPointer<LLViewerFetchedTexture> > image_list_t;
+    typedef std::unordered_set<LLPointer<LLViewerFetchedTexture>, vigna_hash> image_list_t;
     typedef std::queue<LLPointer<LLViewerFetchedTexture> > image_queue_t;
 
     // images that have been loaded but are waiting to be uploaded to GL
