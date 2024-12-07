@@ -128,13 +128,13 @@ LLFrameTimer gRecentFPSTime;
 LLFrameTimer gRecentMemoryTime;
 LLFrameTimer gAssetStorageLogTime;
 
-std::vector<F32>     frame_sort_counts;
-std::vector<F32>     frame_text_counts;
-std::vector<F32>     frame_obj_counts;
-std::vector<F32>     frame_draw_counts;
-std::vector<F32>     frame_clear_counts;
-std::vector<F32>     frame_secpart_counts;
-std::vector<F32>     frame_geom_counts;
+F32 frame_sort_avg = 0;
+F32 frame_text_avg = 0;
+F32 frame_obj_avg  = 0;
+F32 frame_draw_avg = 0;
+F32 frame_clear_avgs = 0;
+F32 frame_secpart_avg = 0;
+F32 frame_geom_avg = 0;
 
 // Rendering stuff
 void pre_show_depth_buffer();
@@ -829,20 +829,12 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
             gPipeline.updateGeom(max_geom_update_time);
             stop_glerror();
         }
-        F32 obj_time = objtimer.getElapsedTimeF32() * 1000000;
-        frame_obj_counts.push_back(obj_time);
+        F32 obj_time = objtimer.getElapsedTimeF32() * 1000;
+        frame_obj_avg += obj_time;
+        frame_obj_avg /= 2;
         if (gRecentFrameCount == 1 && current_frame > 500)
         {
-            F32 max_texttime     = (F32) *std::max_element(frame_obj_counts.begin(), frame_obj_counts.end()) / 1000;
-            F32 min_texttime     = (F32) *std::min_element(frame_obj_counts.begin(), frame_obj_counts.end()) / 1000;
-            F32 average_texttime = 0;
-#ifdef __cpp_lib_execution
-            average_texttime = (F32)(std::reduce(std::execution::par_unseq, frame_obj_counts.begin(), frame_obj_counts.end()) /
-                                     frame_obj_counts.size() / 1000);
-#endif
-            LL_WARNS() << "O frames: " << frame_obj_counts.size() << " Max : " << max_texttime << " min : " << min_texttime
-                       << " avg : " << average_texttime << LL_ENDL;
-            frame_obj_counts.clear();
+            LL_WARNS() << "O frames: " << frame_obj_avg << LL_ENDL;
         }
         objtimer.stop();
 
@@ -957,20 +949,12 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
             }
         }
 
-        F32 text_time = (F32)texttimer.getElapsedTimeF32() * 1000000;
-        frame_text_counts.push_back(text_time);
+        F32 text_time = (F32) texttimer.getElapsedTimeF32() * 1000;
+        frame_text_avg += text_time;
+        frame_text_avg /= 2;
         if (gRecentFrameCount == 1 && current_frame > 500)
         {
-            F32 max_texttime = (F32)*std::max_element(frame_text_counts.begin(), frame_text_counts.end()) / 1000;
-            F32 min_texttime = (F32)*std::min_element(frame_text_counts.begin(), frame_text_counts.end()) / 1000;
-            F32 average_texttime = 0;
-#ifdef __cpp_lib_execution
-            average_texttime = (F32)(std::reduce(std::execution::par_unseq, frame_text_counts.begin(), frame_text_counts.end()) /
-                                   frame_text_counts.size() / 1000);
-#endif
-            LL_WARNS() << "T frames: " << frame_text_counts.size() << " Max : " << max_texttime << " min : " << min_texttime
-                       << " avg : " << average_texttime << LL_ENDL;
-            frame_text_counts.clear();
+            LL_WARNS() << "T frames: " << frame_text_avg << LL_ENDL;
         }
         texttimer.stop();
 
@@ -1138,34 +1122,12 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
             gGL.setColorMask(true, true);
             gPipeline.renderGeomDeferred(*LLViewerCamera::getInstance(), true);
         }
-        F32 geom_time = geomtimer.getElapsedTimeF32() * 1000000;
-        frame_geom_counts.push_back(geom_time);
+        F32 geom_time = geomtimer.getElapsedTimeF32() * 1000;
+        frame_geom_avg += geom_time;
+        frame_geom_avg /= 2;
         if (gRecentFrameCount == 1 && current_frame > 500)
         {
-            F32 max_geom_time = (F32) *std::max_element(frame_geom_counts.begin(), frame_geom_counts.end()) / 1000;
-            F32 min_geom_time = (F32) *std::min_element(frame_geom_counts.begin(), frame_geom_counts.end()) / 1000;
-            F32 average_geom_time = 0;
-#ifdef __cpp_lib_execution
-            average_geom_time = (F32) (std::reduce(std::execution::par_unseq, frame_geom_counts.begin(), frame_geom_counts.end()) /
-                frame_geom_counts.size() / 1000);
-#endif
-            LL_WARNS() << "Render frames: " << frame_geom_counts.size() << " Max : " << max_geom_time << " min : " << min_geom_time
-                       << " avg : " << average_geom_time << LL_ENDL;
-            frame_geom_counts.clear();
-            LLSelectNode* node = LLSelectMgr::getInstance()->getSelection()->getFirstNode(NULL);
-            if (node) {
-                LLViewerObject* objectp = node->getObject();
-                LLVOVolume* vobj = (LLVOVolume*)objectp;
-                if (objectp)
-                {
-                    U8 test = 0;
-                    if (vobj)
-                        test = vobj->mTexAnimMode;
-                    LL_WARNS() << "Selected object: " << objectp->mID
-                        << " mTextAnimMode: " << (S32)test
-                        << LL_ENDL;
-                }
-            }            
+            LL_WARNS() << "Render frames: " << frame_geom_avg << LL_ENDL;
         }
         geomtimer.stop();
         LLTimer rendertimer;
@@ -1210,20 +1172,12 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
 
         gPipeline.clearReferences();
 
-        F32 render_time = rendertimer.getElapsedTimeF32() * 1000000;
-        frame_secpart_counts.push_back(render_time);
+        F32 render_time = rendertimer.getElapsedTimeF32() * 1000;
+        frame_secpart_avg += render_time;
+        frame_secpart_avg /= 2;
         if (gRecentFrameCount == 1 && current_frame > 500)
         {
-            F32 max_rendertime  = (F32) *std::max_element(frame_secpart_counts.begin(), frame_secpart_counts.end()) / 1000;
-            F32 min_rendertime = (F32) *std::min_element(frame_secpart_counts.begin(), frame_secpart_counts.end()) / 1000;
-            F32 average_rendertime = 0;
-#ifdef __cpp_lib_execution
-            average_rendertime = (F32) (std::reduce(std::execution::par_unseq, frame_secpart_counts.begin(), frame_secpart_counts.end()) /
-                frame_secpart_counts.size() / 1000);
-#endif
-            LL_WARNS() << "Unbind frames: " << frame_secpart_counts.size() << " Max : " << max_rendertime << " min : " << min_rendertime
-                       << " avg : " << average_rendertime << LL_ENDL;
-            frame_secpart_counts.clear();
+            LL_WARNS() << "Unbind frames: " << frame_secpart_avg << LL_ENDL;
         }
         rendertimer.stop();
     }
@@ -1244,21 +1198,13 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
         LLGLSLShader::finishProfile();
     }
     
-    F32 draw_time = drawtimer.getElapsedTimeF32() * 1000000;
-    frame_draw_counts.push_back(draw_time);
+    F32 draw_time = drawtimer.getElapsedTimeF32() * 1000;
+    frame_draw_avg += draw_time;
+    frame_draw_avg /= 2;
     if (gRecentFrameCount == 1 && current_frame > 500)
     {
-        F32 max_drawtime     = (F32) *std::max_element(frame_draw_counts.begin(), frame_draw_counts.end()) / 1000;
-        F32 min_drawtime     = (F32) *std::min_element(frame_draw_counts.begin(), frame_draw_counts.end()) / 1000;
-        F32 average_drawtime = 0;
-#ifdef __cpp_lib_execution
-        average_drawtime     = (F32)(std::reduce(std::execution::par_unseq, frame_draw_counts.begin(), frame_draw_counts.end()) /
-                                 frame_draw_counts.size() / 1000);
-#endif
-        LL_WARNS() << "D frames: " << frame_draw_counts.size() << " Max : " << max_drawtime << " min : " << min_drawtime
-                   << " avg : " << average_drawtime << LL_ENDL;
+        LL_WARNS() << "D frames: " << frame_draw_avg << LL_ENDL;
         LL_WARNS() << "Frame time: " << gFrameIntervalSeconds.value() << LL_ENDL;
-        frame_draw_counts.clear();
     }
     drawtimer.stop();
     if (gRecentFrameCount == 1 && current_frame > 500)
