@@ -2782,6 +2782,8 @@ void LLPipeline::updateGeom(F32 max_dtime)
     // for now, only LLVOVolume does this to throttle LOD changes
     LLVOVolume::preUpdateGeom();
 
+    F64 update_interval = 30/1000; // <TS:3T> 30 frames per second for change limiting.
+
     // Iterate through all drawables on the priority build queue,
     for (LLDrawable::drawable_list_t::iterator iter = mBuildQ1.begin();
          iter != mBuildQ1.end();)
@@ -2790,6 +2792,15 @@ void LLPipeline::updateGeom(F32 max_dtime)
         LLDrawable* drawablep = *curiter;
         if (drawablep && !drawablep->isDead())
         {
+            // <TS:3T> Track drawable changes and limit to update interval and maximum run time.
+            F64 time_now = LLTimer::getElapsedSeconds();
+            F64 last_update = drawablep->mLastUpdate ? drawablep->mLastUpdate : 1;
+            if ((time_now > (last_update + update_interval)) && update_timer.getElapsedTimeF32() < max_dtime)
+                drawablep->mLastUpdate = time_now;
+            else
+                break; // Don't continue if within update interval;
+            // </TS:3T>
+
             if (drawablep->isUnload())
             {
                 drawablep->unload();

@@ -113,6 +113,7 @@ void LLDrawable::init(bool new_entry)
     mCurrentScale = LLVector3(1,1,1);
     mDistanceWRTCamera = 0.0f;
     mState     = 0;
+    mLastUpdate = 0; // <TS:3T> Used to track drawable changes.
 
     // mFaces
     mRadius = 0.f;

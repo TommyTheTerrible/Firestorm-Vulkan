@@ -296,6 +296,7 @@ public:
     LLPointer<LLDrawable> mParent;
 
     F32             mDistanceWRTCamera;
+    F64             mLastUpdate; // <TS:3T> Used to track drawable changes.
 
     static F32 sCurPixelAngle; //current pixels per radian
 
