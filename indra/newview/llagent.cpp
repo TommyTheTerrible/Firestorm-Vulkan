@@ -4483,13 +4483,23 @@ void LLAgent::processAgentDataUpdate(LLMessageSystem *msg, void **)
         gAgent.mGroupID = active_id;
         msg->getU64(_PREHASH_AgentData, "GroupPowers", gAgent.mGroupPowers);
         msg->getString(_PREHASH_AgentData, _PREHASH_GroupName, gAgent.mGroupName);
-        LLGroupMgr::getInstance()->sendGroupPropertiesRequest(active_id);
+        // Check for group data, if none then request but if cached then check charter for stream.
+        LLGroupMgrGroupData* group_data = LLGroupMgr::getInstance()->getGroupData(active_id);
+        if (!group_data)
+        {
+            LLGroupMgr::getInstance()->sendGroupPropertiesRequest(active_id);
+        } // Check cached charter.
+        else
+        {
+            gAgent.checkGroupStream(group_data->mCharter);
+        }
     }
     else
     {
         gAgent.mGroupID.setNull();
         gAgent.mGroupPowers = 0;
         gAgent.mGroupName.clear();
+        gAgent.checkGroupStream(""); // Reset group stream to empty string.
     }
     // <FS> Restore to world
     if (gAgent.restoreToWorld)
@@ -4707,11 +4717,16 @@ void LLAgent::setGroupStream(std::string stream)
 {
     if (gAgent.mGroupStream != stream)
     {
-        gAgent.mGroupStream = stream;
-        // Update parcel audio to read mGroupStream
         if (!stream.empty())
+        {
             gAudiop->startInternetStream(stream);
+        }
+        else if (gAudiop->getInternetStreamURL() == gAgent.mGroupStream)
+        {
+            gAudiop->stopInternetStream();
+        }
     }
+    gAgent.mGroupStream = stream;
 }
 
 void LLAgent::checkGroupStream(std::string group_charter)
@@ -4731,11 +4746,16 @@ void LLAgent::checkGroupStream(std::string group_charter)
             {
                 size_t string_length = (found_end - found_start - 2);
                 if (string_length > 0)
+                {
                     stream_url = group_charter.substr(found_start + string_start.size(), string_length);
+                    LLStringUtil::trim(stream_url);
+                }
             }
         }
     }
-    LLStringUtil::trim(stream_url);
+    else {
+        stream_url = "";
+    }
     setGroupStream(stream_url);
 }
 //</TS:3T>
