@@ -2296,19 +2296,25 @@ F32 LLFace::getTextureVirtualSize()
 
 void LLFace::fastcalcPixelArea()
 {
-    LLViewerObject* vobj = getViewerObject();
-
-    if (vobj && vobj->mDrawable)
+    F32 new_area = mBoundingSphereRadius * mBoundingSphereRadius * 3.14159f;
+    if (isState(LLFace::RIGGED))
     {
-        LLSpatialGroup* group = vobj->mDrawable->getSpatialGroup();
-        if (group)
+        // override with avatar bounding box
+        LLVOAvatar* avatar = mVObjp->getAvatar();
+        if (avatar)
         {
-            mPixelArea = group->mPixelArea * (mBoundingSphereRadius / group->mRadius);
+            new_area = avatar->getPixelArea();
         }
     }
-    else {
-        mPixelArea = mBoundingSphereRadius * mBoundingSphereRadius * 3.14159f;
+    else if (mVObjp && mVObjp->mDrawable)
+    {
+        LLSpatialGroup* group = mVObjp->mDrawable->getSpatialGroup();
+        if (group)
+        {
+            new_area = group->mPixelArea * (mBoundingSphereRadius / group->mRadius);
+        }
     }
+    mPixelArea = new_area;
 }
 
 void LLFace::fastcalcImportance()
