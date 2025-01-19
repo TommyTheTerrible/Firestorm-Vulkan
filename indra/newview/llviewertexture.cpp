@@ -749,8 +749,8 @@ bool LLViewerTexture::addTextureStats(F32 virtual_size, bool needs_gltexture) co
     {
         mNeedsGLTexture = true;
     }
-
-    virtual_size = llmin(virtual_size, LLViewerFetchedTexture::sMaxVirtualSize);
+    virtual_size = (F32) (pow(2, ceil(log(ceil(sqrt(virtual_size))) / log(2))));
+    virtual_size = llmin((virtual_size * virtual_size), LLViewerFetchedTexture::sMaxVirtualSize);
     if (mMaxVirtualSize != virtual_size)
         needs_update = true;
     mMaxVirtualSize = virtual_size;
