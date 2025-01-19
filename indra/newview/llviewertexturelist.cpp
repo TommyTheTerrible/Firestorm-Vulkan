@@ -1230,7 +1230,7 @@ F32 LLViewerTextureList::updateBoostImagesFetchTextures(F32 max_time)
     static const U32 MAX_REGION_TSIZE = gSavedSettings.getU32("RegionTextureSize");
     const F32 max_region_vsize = (F32)(MAX_REGION_TSIZE * MAX_REGION_TSIZE);
     static const S32 MIN_UPDATE_COUNT = gSavedSettings.getS32("TextureFetchUpdateMinCount");  // default: 32
-    U64 update_count = mUUIDMap.size() / 50;
+    S32 update_count = (S32)gFPSClamped;
     update_count = llmax(MIN_UPDATE_COUNT, update_count);
 
     {
@@ -1297,8 +1297,8 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
 
     // update N textures at beginning of mImageList
     static const S32 MIN_UPDATE_COUNT = gSavedSettings.getS32("TextureFetchUpdateMinCount");       // default: 32
-    U64 update_count = mUUIDMap.size() / 50;
-    update_count = (U64)llmax( (F32)MIN_UPDATE_COUNT, update_count);
+    S32 update_count = (S32)gFPSClamped;
+    update_count = llmax(MIN_UPDATE_COUNT, update_count);
     {
         LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vtluift - copy");
 
