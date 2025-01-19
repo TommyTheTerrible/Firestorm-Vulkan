@@ -1088,7 +1088,7 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
     }
 
     imagep->processTextureStats();
-    return needs_fetch;
+    return (needs_fetch || (imagep->getDesiredDiscardLevel() != imagep->getDiscardLevel()));
 }
 
 //void LLViewerTextureList::setDebugFetching(LLViewerFetchedTexture* tex, S32 debug_level)
