@@ -1928,7 +1928,7 @@ bool LLViewerFetchedTexture::updateFetch()
     F32 decode_priority = mMaxVirtualSize;
     F32 importance      = getMaxFaceImportance();
 
-    if (((current_discard < 0 && importance > 0) || forHUD()))
+    if ((current_discard < 0 && importance > 0) || forHUD() || forParticle())
         decode_priority = (4096 * 4096);
     decode_priority *= llclamp(importance, 1, 4);
     decode_priority = llmin(decode_priority, LLViewerFetchedTexture::sMaxVirtualSize);
