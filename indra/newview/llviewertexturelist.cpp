@@ -1008,6 +1008,8 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
             assign_size /= (float)llmax(pow((LLViewerTexture::sDesiredDiscardBias - 1), 4), 1);
         if (for_hud > 0) // HUDs to use max image size
             assign_size = MAX_IMAGE_AREA;
+        if (for_particle > 0)
+            assign_size = llmax(assign_size, (256 * 256));
         // Assign size to image and find out if a fetch is necessary
         //      from mMaxVirtualSize changing or discard not correct.
         needs_fetch = (imagep->addTextureStats(assign_size) ||
