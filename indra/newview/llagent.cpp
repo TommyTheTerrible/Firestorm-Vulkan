@@ -4739,10 +4739,10 @@ void LLAgent::checkGroupStream(std::string group_charter)
     if (group_charter.size() > 0)
     {
         found_end = group_charter.find(string_end);
-        if (found_end > 0)
+        if (found_end != std::string::npos)
         {
             found_start = group_charter.rfind(string_start, found_end);
-            if (found_start >= 0)
+            if (found_start != std::string::npos)
             {
                 size_t string_length = (found_end - found_start - 2);
                 if (string_length > 0)
