@@ -759,10 +759,10 @@ bool LLViewerTexture::addTextureStats(F32 virtual_size) const
     // Adjust virtual_size to nearest power of two
     virtual_size = (F32) nearest_power_of_two((U32)virtual_size);
     virtual_size = llmin(virtual_size, LLViewerFetchedTexture::sMaxVirtualSize);
-    if(mMaxVirtualSize != virtual_size)
-        mNeedsGLTexture = true;
+    bool needs_update = (mMaxVirtualSize != virtual_size);
+    mNeedsGLTexture = true;
     mMaxVirtualSize = virtual_size;
-    return mNeedsGLTexture;
+    return needs_update;
 }
 
 void LLViewerTexture::resetTextureStats()
