@@ -127,17 +127,23 @@ LLUUID LLViewerTexture::sInvisiprimTexture2 = LLUUID::null;
 #define TEX_INVISIPRIM1 "e97cf410-8e61-7005-ec06-629eba4cd1fb"
 #define TEX_INVISIPRIM2 "38b86f85-2575-52a9-a531-23108d8da837"
 
-U32 nearest_power_of_two(U32 v)
+F32 nearest_power_of_two(F32 input)
 {
-    // https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
-    v--;
-    v |= v >> 1;
-    v |= v >> 2;
-    v |= v >> 4;
-    v |= v >> 8;
-    v |= v >> 16;
-    v++;
-    return v;
+    // https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2Float
+    unsigned int const v = (unsigned int)input;
+    unsigned int r;
+    if (v > 1)
+    {
+        float f = (float) v;
+        unsigned int const t = 1U << ((*(unsigned int*) &f >> 23) - 0x7f);
+        unsigned int adjust = (t < v);
+        r = t << adjust;
+    }
+    else
+    {
+        r = 1;
+    }
+    return (F32)r;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -757,7 +763,7 @@ bool LLViewerTexture::addTextureStats(F32 virtual_size) const
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_TEXTURE;
     // Adjust virtual_size to nearest power of two
-    virtual_size = (F32) nearest_power_of_two((U32)virtual_size);
+    virtual_size = nearest_power_of_two(virtual_size);
     virtual_size = llmin(virtual_size, LLViewerFetchedTexture::sMaxVirtualSize);
     bool needs_update = (mMaxVirtualSize != virtual_size);
     mNeedsGLTexture = true;
