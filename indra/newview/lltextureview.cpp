@@ -68,7 +68,7 @@ std::set<LLViewerFetchedTexture*> LLTextureView::sDebugImages;
 
 ////////////////////////////////////////////////////////////////////////////
 
-static std::string title_string1a("Tex UUID Area  DDis(Req)  DecodePri(Fetch)     [download] pk/max");
+static std::string title_string1a("UUID       Area D(R)   Imp FFT(Bst) s/h/p   Download pk/max");
 static std::string title_string1b("Tex UUID Area  DDis(Req)  Fetch(DecodePri)     [download] pk/max");
 static std::string title_string2("State");
 static std::string title_string3("Pkt Bnd");
@@ -198,12 +198,23 @@ void LLTextureBar::draw()
     std::string uuid_str;
     mImagep->mID.toString(uuid_str);
     uuid_str = uuid_str.substr(0,7);
+    std::string boost_space;
+    if (mImagep->mBoostLevel < 10)
+        boost_space = " "; // Formating space to keep columns in line when boost is one digit
 
-    tex_str = llformat("%s %7.0f %d(%d)",
+    tex_str = llformat("%s %7.0f %d(%d)  %0.2f  %d(%d) %s  %d/%d/%d",
         uuid_str.c_str(),
         mImagep->mMaxVirtualSize,
         mImagep->mDesiredDiscardLevel,
-        mImagep->mRequestedDiscardLevel);
+        mImagep->mRequestedDiscardLevel,
+        mImagep->mMaxFaceImportance,
+        mImagep->mFTType,
+        mImagep->mBoostLevel,
+        boost_space,
+        mImagep->mForSculpt,
+        mImagep->mForHUD,
+        mImagep->mForParticle
+    );
 
 
     LLFontGL::getFontMonospace()->renderUTF8(tex_str, 0, title_x1, getRect().getHeight(),
@@ -255,7 +266,7 @@ void LLTextureBar::draw()
 
     // Draw the progress bar.
     S32 bar_width = 100;
-    S32 bar_left = 260;
+    S32 bar_left = 280;
     left = bar_left;
     right = left + bar_width;
 
