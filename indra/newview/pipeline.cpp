@@ -2765,6 +2765,56 @@ void LLPipeline::rebuildPriorityGroups()
 
 }
 
+void LLPipeline::processDrawable(LLDrawable* drawable)
+{
+    LLDrawable::face_list_t faces = drawable->getFaces();
+    for (LLFace* face : faces)
+    {
+        face->markTextures();
+    }
+}
+
+void LLPipeline::processMarkedDrawables(F32 max_dtime)
+{
+    LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE;
+
+    LLTimer update_timer;
+
+    while (!mMarkedDrawables.empty() && update_timer.getElapsedTimeF32() < max_dtime)
+    {
+        LLDrawable* drawable = mMarkedDrawables.front();
+        if (!drawable->isDead())
+        {
+            processDrawable(drawable);
+        }
+        mMarkedDrawables.pop();
+    }
+}
+
+void LLPipeline::processMarkedTextures(F32 max_dtime)
+{
+    LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE;
+
+    LLTimer update_timer;
+
+    while (!gTextureList.mMarkedTextures.empty() && update_timer.getElapsedTimeF32() < max_dtime)
+    {
+        LLViewerTexture* texture = *gTextureList.mMarkedTextures.begin();
+        if (texture && texture->getGLTexture() && texture->getNumRefs() > 1)
+        {
+            LLViewerFetchedTexture* fetched_texture = LLViewerTextureManager::staticCastToFetchedTexture(texture);
+            if (fetched_texture)
+            {
+                if (gTextureList.updateImageDecodePriority(fetched_texture) && fetched_texture->isActive())
+                {
+                    fetched_texture->updateFetch();
+                }
+            }
+        }
+        gTextureList.mMarkedTextures.erase(texture);
+    }
+}
+
 void LLPipeline::updateGeom(F32 max_dtime)
 {
     LLTimer update_timer;

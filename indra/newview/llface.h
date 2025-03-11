@@ -99,6 +99,7 @@ public:
     U16             getGeomStart()      const   { return mGeomIndex; }      // index into draw pool
     void            setTextureIndex(U8 index);
     U8              getTextureIndex() const     { return mTextureIndex; }
+    void            markTextures();
     void            setTexture(U32 ch, LLViewerTexture* tex);
     void            setTexture(LLViewerTexture* tex) ;
     void            setDiffuseMap(LLViewerTexture* tex);

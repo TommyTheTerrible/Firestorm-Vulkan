@@ -278,6 +278,7 @@ void LLFace::setPool(LLFacePool* new_pool, LLViewerTexture *texturep)
     setTexture(texturep) ;
 }
 
+void LLFace::markTextures()
 void LLFace::setTexture(U32 ch, LLViewerTexture* tex)
 {
     llassert(ch < LLRender::NUM_TEXTURE_CHANNELS);
