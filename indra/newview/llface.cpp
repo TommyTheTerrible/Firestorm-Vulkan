@@ -279,6 +279,15 @@ void LLFace::setPool(LLFacePool* new_pool, LLViewerTexture *texturep)
 }
 
 void LLFace::markTextures()
+{
+    for (U32 i = 0; i < LLRender::NUM_TEXTURE_CHANNELS; i++)
+    {
+        if (mTexture[i] && mTexture[i]->getBoostLevel() == LLGLTexture::BOOST_NONE &&
+            mTexture[i]->getType() == LLViewerTexture::LOD_TEXTURE)
+            gTextureList.mMarkedTextures.insert(mTexture[i]);
+    }
+}
+
 void LLFace::setTexture(U32 ch, LLViewerTexture* tex)
 {
     llassert(ch < LLRender::NUM_TEXTURE_CHANNELS);

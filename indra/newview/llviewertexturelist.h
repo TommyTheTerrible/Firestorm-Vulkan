@@ -245,6 +245,8 @@ public:
 
     bool mForceResetTextureStats;
 
+    std::unordered_set<LLPointer<LLViewerTexture>, vigna_hash> mMarkedTextures;
+
     // to make "for (auto& imagep : gTextureList)" work
     const image_list_t::const_iterator begin() const { return mImageList.cbegin(); }
     const image_list_t::const_iterator end() const { return mImageList.cend(); }
