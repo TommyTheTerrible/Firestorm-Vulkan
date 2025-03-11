@@ -864,8 +864,8 @@ void LLViewerTextureList::updateImages(F32 max_time)
     F32 remaining_time = max_time;
 
     //load boosted images
-    remaining_time -= updateBoostImagesFetchTextures(remaining_time);
-    remaining_time = llmax(remaining_time, min_time);
+    //remaining_time -= updateBoostImagesFetchTextures(remaining_time);
+    //remaining_time = llmax(remaining_time, min_time);
 
     //dispatch to texture fetch threads
     remaining_time -= updateImagesFetchTextures(remaining_time);
@@ -1292,8 +1292,9 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
 
     // update N textures at beginning of mImageList
     static const S32 MIN_UPDATE_COUNT = gSavedSettings.getS32("TextureFetchUpdateMinCount");       // default: 32
-    S32 update_count = (S32)gFPSClamped;
-    update_count = llmax(MIN_UPDATE_COUNT, update_count);
+    //S32 update_count = (S32)gFPSClamped;
+    //update_count = llmax(MIN_UPDATE_COUNT, update_count);
+    S32 update_count = MIN_UPDATE_COUNT;
     {
         LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vtluift - copy");
 
@@ -1309,7 +1310,8 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
 
             if (iter->second->getGLTexture() && iter->second->getNumRefs() > 1)
             {
-                if (!iter->second->hasFetcher() && iter->second->getBoostLevel() <= 0)
+                //if (!iter->second->hasFetcher() && iter->second->getBoostLevel() <= 0)
+                if (!iter->second->hasFetcher())
                     entries.push_back(iter->second);
             }
             ++iter;
