@@ -2328,7 +2328,7 @@ void LLFace::fastcalcImportance()
         LLSpatialGroup* group = vobj->mDrawable->getSpatialGroup();
         if (group)
         {
-            importance += (mPixelArea / group->mPixelArea / window_area);
+            importance += (mPixelArea / window_area);
             in_frustum = group->isVisible();
         }
     }
