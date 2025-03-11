@@ -364,6 +364,7 @@ public:
     void updateVirtualSize() ;
 
     S32  getDesiredDiscardLevel()            { return mDesiredDiscardLevel; }
+    S32  getRequestedDiscardLevel()          { return mRequestedDiscardLevel; }
     S32  getLastFetchState()                 { return mLastFetchState; }
     void setMinDiscardLevel(S32 discard)    { mMinDesiredDiscardLevel = llmin(mMinDesiredDiscardLevel,(S8)discard); }
 
