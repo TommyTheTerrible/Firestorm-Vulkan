@@ -6434,8 +6434,7 @@ void LLVolumeGeometryManager::rebuildGeom(LLSpatialGroup* group)
         pbr_mask = pbr_mask | LLVertexBuffer::MAP_EMISSIVE;
     }
 
-    //bool batch_textures = LLViewerShaderMgr::instance()->getShaderLevel(LLViewerShaderMgr::SHADER_OBJECT) > 1;
-    bool batch_textures = false;
+    bool batch_textures = LLViewerShaderMgr::instance()->getShaderLevel(LLViewerShaderMgr::SHADER_OBJECT) > 1;
 
     // add extra vertex data for deferred rendering (not necessarily for batching textures)
     if (batch_textures)
