@@ -2110,6 +2110,9 @@ void LLIMModel::sendTypingState(LLUUID session_id, LLUUID other_participant_id, 
     {
         return;
     }
+    // Tommy - Do not send typing notification to non-friends
+    if (!LLAvatarTracker::instance().isBuddy(other_participant_id))
+        return;
 
     std::string name;
     LLAgentUI::buildFullname(name);
