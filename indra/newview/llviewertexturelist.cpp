@@ -899,7 +899,7 @@ void LLViewerTextureList::postProcessImages(F32 max_time)
             didone = image->doLoadedCallbacks();
         }
     }
-
+    /*
     for (image_list_t::iterator iter = mProcessingTextures.begin(); iter != mProcessingTextures.end(); iter++)
     {
         LLViewerFetchedTexture* image = *iter;
@@ -915,6 +915,7 @@ void LLViewerTextureList::postProcessImages(F32 max_time)
             mProcessingTextures.erase(image);
         }
     }
+    */
 
     updateImagesUpdateStats();
 }
@@ -1366,22 +1367,28 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
             if (pair.second->isFetching() || pair.second->hasFetcher() || pair.second->hasCallbacks())
                 pair.second->updateFetch();
         }
-    LLTimer timer;
+    }
+
+    //LLTimer timer;
+    timer.reset();
     for (image_list_t::iterator iter = mProcessingTextures.begin(); iter != mProcessingTextures.end();)
     {
         image_list_t::iterator curiter = iter++;
         LLViewerFetchedTexture* imagep = *curiter;
+        bool need_processing = false;
         if (imagep->getGLTexture() && imagep->getNumRefs() > 1)
         {
             imagep->processTextureStats();
-            imagep->updateFetch();
+            need_processing = imagep->updateFetch();
         }
+
+        if (!need_processing)
+            mProcessingTextures.erase(imagep);
 
         if (timer.getElapsedTimeF32() > max_time)
         {
             break;
         }
-    }
     }
 
     return timer.getElapsedTimeF32();
