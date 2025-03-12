@@ -1214,7 +1214,8 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
             << " active: " << gObjectList.getNumActiveObjects()
             << " orphans: " << gObjectList.getOrphanCount()
             << " sculpt: " << sculpties
-            << LL_ENDL;        
+            << LL_ENDL;
+        LL_WARNS() << "Processing Textures: " << (S32)gTextureList.mProcessingTextures.size() << LL_ENDL;
     }    
 }
 
