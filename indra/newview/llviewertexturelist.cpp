@@ -812,6 +812,7 @@ void LLViewerTextureList::addImage(LLViewerFetchedTexture *new_image, ETexListTy
     addImageToList(new_image);
     mUUIDMap[key] = new_image;
     new_image->setTextureListType(tex_type);
+    mProcessingTextures.insert(new_image);
 }
 
 
@@ -896,6 +897,22 @@ void LLViewerTextureList::postProcessImages(F32 max_time)
         {
             // Do stuff to handle callbacks, update priorities, etc.
             didone = image->doLoadedCallbacks();
+        }
+    }
+
+    for (image_list_t::iterator iter = mProcessingTextures.begin(); iter != mProcessingTextures.end(); iter++)
+    {
+        LLViewerFetchedTexture* image = *iter;
+        bool fetched_desired =
+            (image->getLastFetchState() >= 0 && image->getLastFetchState() == image->getDesiredDiscardLevel());
+        bool current_desired = (image->getDiscardLevel() >= 0 && image->getDiscardLevel() == image->getDesiredDiscardLevel());
+        if (image->isMissingAsset() ||
+            (image->isFullyLoaded() && (fetched_desired || current_desired ||
+                (image->getFTType() > 0 && image->getDiscardLevel() == 0) ||
+                (image->getMaxVirtualSize() == 0 && image->getDiscardLevel() == 5) ||
+                (image->getMaxDiscardLevel() < image->getDesiredDiscardLevel()))))
+        {
+            mProcessingTextures.erase(image);
         }
     }
 
@@ -1033,6 +1050,7 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
     {
         if (imagep->getLastReferencedTimer()->getElapsedTimeF32() > lazy_flush_timeout)
         {
+            mProcessingTextures.erase(imagep);
             // Remove the unused image from the image list
             deleteImage(imagep);
             imagep = NULL;  // should destroy the image
@@ -1348,6 +1366,22 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
             if (pair.second->isFetching() || pair.second->hasFetcher() || pair.second->hasCallbacks())
                 pair.second->updateFetch();
         }
+    LLTimer timer;
+    for (image_list_t::iterator iter = mProcessingTextures.begin(); iter != mProcessingTextures.end();)
+    {
+        image_list_t::iterator curiter = iter++;
+        LLViewerFetchedTexture* imagep = *curiter;
+        if (imagep->getGLTexture() && imagep->getNumRefs() > 1)
+        {
+            imagep->processTextureStats();
+            imagep->updateFetch();
+        }
+
+        if (timer.getElapsedTimeF32() > max_time)
+        {
+            break;
+        }
+    }
     }
 
     return timer.getElapsedTimeF32();
