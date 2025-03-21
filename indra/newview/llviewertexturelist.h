@@ -243,7 +243,6 @@ public:
     image_list_t mCallbackList;
     image_list_t mFastCacheList;
 
-    image_list_t mProcessingTextures;
     bool mForceResetTextureStats;
 
     std::unordered_set<LLPointer<LLViewerTexture>, vigna_hash> mMarkedTextures;
