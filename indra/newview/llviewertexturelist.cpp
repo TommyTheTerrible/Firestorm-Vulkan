@@ -1310,8 +1310,7 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
 
             if (iter->second->getGLTexture() && iter->second->getNumRefs() > 1)
             {
-                //if (!iter->second->hasFetcher() && iter->second->getBoostLevel() <= 0)
-                if (!iter->second->hasFetcher())
+                if (!iter->second->isFetching() && !iter->second->hasFetcher() && !iter->second->hasCallbacks())
                     entries.push_back(iter->second);
             }
             ++iter;
@@ -1325,7 +1324,8 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
 
     for (auto& imagep : entries)
     {
-        if (updateImageDecodePriority(imagep))
+        if (updateImageDecodePriority(imagep, (imagep->getBoostLevel() <= 0 ||
+                    (imagep->getBoostLevel() > 0 && imagep->getDiscardLevel() != imagep->getDesiredDiscardLevel()))))
             imagep->updateFetch();
 
         last_imagep = imagep;
