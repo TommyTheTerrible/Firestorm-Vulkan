@@ -501,7 +501,6 @@ protected:
     S8  mMinDesiredDiscardLevel;    // The minimum discard level we'd like to have
 
     F32 mMaxFaceImportance; // Keep track of highest importance from faces for textures.
-    U32 mIncomingChangeBits; // Keep track of change in bits
 
     bool mNeedsAux;                 // We need to decode the auxiliary channels
     bool mHasAux;                    // We have aux channels

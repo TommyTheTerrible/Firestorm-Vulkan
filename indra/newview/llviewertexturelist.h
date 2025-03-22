@@ -253,7 +253,6 @@ public:
 
     // <FS:Ansariel> Fast cache stats
     static U32 sNumFastCacheReads;
-    S64 mListMemoryIncomingBytes;
 
 private:
     typedef std::map< LLTextureKey, LLPointer<LLViewerFetchedTexture> > uuid_map_t;

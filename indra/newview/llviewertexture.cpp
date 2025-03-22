@@ -545,11 +545,10 @@ void LLViewerTexture::updateClass()
     F64 texture_bytes_alloc = LLImageGL::getTextureBytesAllocated() / 1024.0 / 512.0;
     F64 vertex_bytes_alloc = LLVertexBuffer::getBytesAllocated() / 1024.0 / 512.0;
     F64 render_bytes_alloc = LLRenderTarget::sBytesAllocated / 1024.0 / 512.0;
-    F64 texturelist_bytes_coming = gTextureList.mListMemoryIncomingBytes / 1024.0 / 512.0;
 
     // get an estimate of how much video memory we're using
     // NOTE: our metrics miss about half the vram we use, so this biases high but turns out to typically be within 5% of the real number
-    F32 used = (F32) ll_round(texture_bytes_alloc + vertex_bytes_alloc + render_bytes_alloc + texturelist_bytes_coming);
+    F32 used = (F32) ll_round(texture_bytes_alloc + vertex_bytes_alloc + render_bytes_alloc);
 
     F32 budget = max_vram_budget == 0 ? (F32)gGLManager.mVRAM : (F32)max_vram_budget;
 
@@ -1099,7 +1098,6 @@ void LLViewerFetchedTexture::init(bool firstinit)
     mForceCallbackFetch = false;
 
     mFTType = FTT_UNKNOWN;
-    mIncomingChangeBits = 0;
     mBoostLoaded = 0;
     mLastTimeUpdated.start();
 }
@@ -1963,11 +1961,6 @@ bool LLViewerFetchedTexture::updateFetch()
             mIsFetching = false;
             //mLastFetchState = -1; <TS:3T> Do not reset, to keep track of last fetch response.
             mLastPacketTimer.reset();
-            if (mIncomingChangeBits > 0)
-            {
-                gTextureList.mListMemoryIncomingBytes -= (S32)mIncomingChangeBits;
-                //mIncomingChangeBits = 0;
-            }
             mLastTimeUpdated.reset();
         }
         else
@@ -2266,16 +2259,6 @@ bool LLViewerFetchedTexture::updateFetch()
         if (fetch_request_discard >= 0)
         {
             mLastUpdateFrame = LLViewerOctreeEntryData::getCurrentFrame();
-            if (w * h * c > 0) {
-                if (current_discard >=0 )
-                    mIncomingChangeBits =
-                        (getWidth(fetch_request_discard) * getHeight(fetch_request_discard) * getComponents());
-                else
-                    mIncomingChangeBits = (64 * 64 * 4);
-                gTextureList.mListMemoryIncomingBytes += (S32)mIncomingChangeBits;
-            }
-            //gTextureList.markTexture(this);
-
             LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - request created");
             mHasFetcher = true;
             mIsFetching = true;

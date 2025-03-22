@@ -109,7 +109,6 @@ void LLViewerTextureList::init()
 {
     mInitialized = true ;
     sNumImages = 0;
-    mListMemoryIncomingBytes = 0;
     mForceDecodeTimer.start();
     doPreloadImages();
 }
