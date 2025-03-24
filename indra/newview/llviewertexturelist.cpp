@@ -1323,7 +1323,8 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
 
     for (auto& imagep : entries)
     {
-        if (updateImageDecodePriority(imagep, (imagep->getBoostLevel() != LLViewerTexture::BOOST_HIGH)))
+        bool check_faces = (imagep->getBoostLevel() != LLViewerTexture::BOOST_HIGH && imagep->getBoostLevel() != LLViewerTexture::BOOST_PREVIEW);
+        if (updateImageDecodePriority(imagep, check_faces))
             imagep->updateFetch();
 
         last_imagep = imagep;
