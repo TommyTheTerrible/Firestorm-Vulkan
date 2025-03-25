@@ -1927,8 +1927,8 @@ bool LLViewerFetchedTexture::updateFetch()
         return false;
     }
 
-    S32 current_discard = getCurrentDiscardLevelForFetching();
-    //S32 current_discard = getDiscardLevel();
+    //S32 current_discard = getCurrentDiscardLevelForFetching();
+    S32 current_discard = getDiscardLevel();
     S32 desired_discard = getDesiredDiscardLevel();
     F32 decode_priority = mMaxVirtualSize;
     F32 importance      = (F32)((0.01 + getMaxFaceImportance()) / 2);
@@ -2119,31 +2119,22 @@ bool LLViewerFetchedTexture::updateFetch()
         LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - create or missing");
         make_request = false;
     }
-    else if (current_discard < 0)
-    {
-        make_request = true; // This is here only to break from the if else chain, knowing all remaining require the opposite
-    }
-    else if (getType() == LLViewerTexture::FETCHED_TEXTURE && current_discard < desired_discard)
+    else if (getType() == LLViewerTexture::FETCHED_TEXTURE && current_discard >= 0 && current_discard <= desired_discard)
     {
         LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - do not LOD adjust FETCHED_TEXTURE");
         make_request = false;
     }
-    //else if (getFTType() == 1)
-    //{
-    //    LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - do not LOD adjust FFT");
-    //    desired_discard = 5;
-    //    //make_request = false;
-    //}
-    else if ((getFTType() > 0 && getFTType() < 4) && current_discard < desired_discard)
+    else if ((getFTType() > 0 && getFTType() < 4) && current_discard >= 0 && current_discard <= desired_discard)
     {
         LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - do not LOD adjust FFT");
         make_request = false;
     }
-    else if ((mBoostLevel > 0) && current_discard < desired_discard)
+    else if ((mBoostLevel > 0) && current_discard >= 0 && current_discard <= desired_discard)
     {
         LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - do not LOD adjust Boost");
             make_request = false;
     }
+    /*
     //else if (hasCameraChanged(5) && (!forSculpt() || importance <= 0.0f || desired_discard > 2))
     else if (hasCameraChanged(5) && importance <= 0.0f && !forSculpt())
     {
@@ -2162,6 +2153,7 @@ bool LLViewerFetchedTexture::updateFetch()
         LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - mMaxVirtualSize too small for update");
         //make_request = false;
     }
+    */
     //else if (current_discard >= 0 && current_discard <= mMinDiscardLevel)
     //{
     //    LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - current < min");
