@@ -1935,7 +1935,7 @@ bool LLViewerFetchedTexture::updateFetch()
 
     if ((current_discard < 0 && importance > 0) || forHUD() || forParticle())
         decode_priority = (4096 * 4096);
-    decode_priority *= llclamp(importance, 0.005, 4);
+    decode_priority *= llclamp(importance, 0.1, 4);
     decode_priority = llmin(decode_priority, LLViewerFetchedTexture::sMaxVirtualSize);
     // </TS:3T>
 
