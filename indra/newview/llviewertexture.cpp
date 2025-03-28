@@ -553,13 +553,10 @@ void LLViewerTexture::updateClass()
     F32 budget = max_vram_budget == 0 ? (F32)gGLManager.mVRAM : (F32)max_vram_budget;
 
     // TommyTheTerrible - Start Bias creep upwards at 4/5ths VRAM used.
-    F32 whatRemains = budget * 0.80f;
-    F32 target      = llmax(budget, MIN_VRAM_BUDGET);
-    sFreeVRAMMegabytes = llmax(target - used, 0.f);
-    target = llmax(budget - whatRemains, MIN_VRAM_BUDGET);
+    F32 target         = llmax((budget * 0.20f), MIN_VRAM_BUDGET);
+    sDesiredDiscardBias = llmax(used / target, 1.f);
 
-    F32 over_pct = llmax((used - target) / target, 0.f);
-    sDesiredDiscardBias = (1.f + over_pct);
+    sFreeVRAMMegabytes  = llmax(budget - used, 0.f);
 
 
     LLViewerTexture::sFreezeImageUpdates = false; // sDesiredDiscardBias > (desired_discard_bias_max - 1.0f);
