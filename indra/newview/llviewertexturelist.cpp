@@ -1342,11 +1342,8 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
 
     for (auto pair : mUUIDMap)
     {
-        if (pair.second->getGLTexture() && pair.second->getNumRefs() > 1)
-        {
-            if (pair.second->isFetching() || pair.second->hasFetcher() || pair.second->hasCallbacks())
-                pair.second->updateFetch();
-        }
+        if (pair.second->hasFetcher())
+            pair.second->updateFetch();
     }
     return timer.getElapsedTimeF32();
 }
