@@ -595,14 +595,15 @@ void LLGLTexMemBar::draw()
     gGL.color4f(0.f, 0.f, 0.f, 0.25f);
     gl_rect_2d(-10, getRect().getHeight() + line_height*2 + 1, getRect().getWidth()+2, getRect().getHeight()+2);
 
-    text = llformat("Est. Free: %d MB Sys Free: %d MB GL Tex: %d MB FBO: %d MB Bias: %.2f Cache: %.1f/%.1f MB",
+    text = llformat("Est. Free: %d MB Sys Free: %d MB GL Tex: %d MB FBO: %d MB Bias: %.2f Cache: %.1f/%.1f MB mVRAM: %d",
                     (S32)LLViewerTexture::sFreeVRAMMegabytes,
                     LLMemory::getAvailableMemKB()/1024,
                     LLImageGL::getTextureBytesAllocated() / 1024 / 1024,
                     LLRenderTarget::sBytesAllocated/(1024*1024),
                     discard_bias,
                     cache_usage,
-                    cache_max_usage);
+                    cache_max_usage,
+                    gGLManager.mVRAM);
     // <FS:Ansariel> Texture memory bars
     //LLFontGL::getFontMonospace()->renderUTF8(text, 0, 0, v_offset + line_height*7,
     LLFontGL::getFontMonospace()->renderUTF8(text, 0, 0, v_offset + line_height*9,
