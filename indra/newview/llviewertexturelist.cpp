@@ -935,12 +935,13 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
     S32 for_particle = 0;
     U32 num_faces = 0;
 
+    if (check_faces)
     LL_PROFILE_ZONE_SCOPED_CATEGORY_TEXTURE
     {
         for (U32 i = 0; i < LLRender::NUM_TEXTURE_CHANNELS; i++)
         {
-            if (!check_faces)
-                break;
+            //if (!check_faces)
+            //    break;
             num_faces += imagep->getNumFaces(i);
             // Use parallelized generate to adjust virtual sizes for the faces and collect overall importance.
             std::vector<float> work(imagep->getNumFaces(i));
@@ -985,9 +986,9 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
                 return vsize;
             });
         }
-    }
-    if (check_faces)
-    {
+    //}
+    //if (check_faces)
+    //{
         bool in_frustum = (assign_importance > 0);
         // If texture is used for an animation, increase it's size
         assign_size *= (float) llmax(pow((bool(for_anim) && in_frustum) * 2, 4), 1);
@@ -1026,7 +1027,7 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
     // Flush formatted images using a lazy flush
     //
     // Reset texture state if found on a face or not.
-    imagep->setInactive(num_faces > 0 || (!check_faces && imagep->getTotalNumFaces() > 0));
+    imagep->setInactive((check_faces ? (num_faces > 0) : (imagep->getTotalNumFaces() > 0)));
     S32 num_refs = imagep->getNumRefs();
     if (num_refs <= min_refs)
     {
