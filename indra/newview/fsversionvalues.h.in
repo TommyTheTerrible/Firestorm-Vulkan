@@ -46,5 +46,6 @@ const std::string LL_VIEWER_VERSION_GITHASH {@VIEWER_VERSION_GITHASH@};
 #define LLBUILD_CONFIG "@CMAKE_BUILD_TYPE@"
 
 // </FS:TS>
+#define VIEWER_SPLASH_URL "https://frontpage.tommytheterrible.com/?version=@VIEWER_VERSION_REVISION@"
 
 #endif

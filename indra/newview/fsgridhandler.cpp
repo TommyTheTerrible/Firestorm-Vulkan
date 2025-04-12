@@ -53,6 +53,7 @@
 #include "fspanellogin.h"
 #include "lfsimfeaturehandler.h"    // <COLOSI opensim multi-currency support />
 #include "llmaterialtable.h" // <FS:Beq> FIRE-31628 for access to static var
+#include "fsversionvalues.h"
 
 void gridDownloadError( LLSD const &aData, LLGridManager* mOwner, GridEntry* mData, LLGridManager::AddState mState )
 {
@@ -150,7 +151,7 @@ void gridDownloadComplete( LLSD const &aData, LLGridManager* mOwner, GridEntry* 
     }
 }
 
-const char* DEFAULT_LOGIN_PAGE = "https://frontpage.tommytheterrible.com/";
+const char* DEFAULT_LOGIN_PAGE = VIEWER_SPLASH_URL;
 
 const char* SYSTEM_GRID_SLURL_BASE = "secondlife://%s/secondlife/";
 const char* MAIN_GRID_SLURL_BASE = "http://maps.secondlife.com/secondlife/";
