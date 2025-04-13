@@ -939,9 +939,9 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
     {
         for (U32 i = 0; i < LLRender::NUM_TEXTURE_CHANNELS; i++)
         {
+            num_faces += imagep->getNumFaces(i);
             if (!check_faces)
                 break;
-            num_faces += imagep->getNumFaces(i);
             // Use parallelized generate to adjust virtual sizes for the faces and collect overall importance.
             std::vector<float> work(imagep->getNumFaces(i));
 #ifdef __cpp_lib_execution
@@ -971,7 +971,7 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
                     face->fastcalcImportance();
                     vsize = face->getPixelArea();
                     importance = face->getImportanceToCamera();
-                    //bool in_frustum = (importance > 0);
+                    bool in_frustum = (importance > 0);
                     // Scale pixel area higher or lower depending on texture scale
                     F32 min_scale = llmin(fabsf(te->getScaleS()), fabsf(te->getScaleT()));
                     min_scale = llmax(min_scale * min_scale, 0.1f);
@@ -1026,7 +1026,7 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
     // Flush formatted images using a lazy flush
     //
     // Reset texture state if found on a face or not.
-    imagep->setInactive(num_faces > 0 || (!check_faces && imagep->getTotalNumFaces() > 0));
+    imagep->setInactive(num_faces > 0);
     S32 num_refs = imagep->getNumRefs();
     if (num_refs <= min_refs)
     {
