@@ -934,44 +934,27 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
     S32 for_hud = 0;
     S32 for_particle = 0;
     U32 num_faces = 0;
+    U32 max_faces_to_check = 64;
 
     LL_PROFILE_ZONE_SCOPED_CATEGORY_TEXTURE
     {
         for (U32 i = 0; i < LLRender::NUM_TEXTURE_CHANNELS; i++)
         {
             num_faces += imagep->getNumFaces(i);
-            if (!check_faces)
-                break;
-            // Use parallelized generate to adjust virtual sizes for the faces and collect overall importance.
-            std::vector<float> work(imagep->getNumFaces(i));
-#ifdef __cpp_lib_execution
-            std::generate(std::execution::par_unseq, work.begin(), work.end(),
-                [imagep, i, &assign_size, &assign_importance,
-                &for_anim, &for_hud, &for_particle
-                , n = 0]() mutable
-#else
-            std::generate(work.begin(), work.end(),
-                [imagep, i, &assignSize, &assignImportance,
-                &for_anim, &for_hud, &for_particle
-                , n = 0]() mutable
-#endif
+            if (!check_faces || num_faces == 0 || num_faces > max_faces_to_check)
+                continue;
+            for (S32 fi = 0; fi < imagep->getNumFaces(i); )
             {
-                LLFace *face       = (*(imagep->getFaceList(i)))[n++];
-                float   vsize      =  64; // some faces do not have texture entries early, but we still need to allow the texture to be fetched
+                LLFace *face       = (*(imagep->getFaceList(i)))[fi++];
+                float   vsize      =  0; // some faces do not have texture entries early, but we still need to allow the texture to be fetched
                 float   importance =  0;                
                 bool    calculate  = (face && face->getTextureEntry() && face->getDrawable()); // pre-calculate bool to help branch predictions
                 if (calculate)
                 {
                     const LLTextureEntry *te = face->getTextureEntry();
-                    //F32 radius;
-                    //F32 cos_angle_to_view_dir;
-                    // Calculate the face's pixel area so getPixelArea is updated.
-                    // bool in_frustum = face->calcPixelArea(cos_angle_to_view_dir, radius);
                     face->fastcalcPixelArea();
-                    face->fastcalcImportance();
                     vsize = face->getPixelArea();
                     importance = face->getImportanceToCamera();
-                    bool in_frustum = (importance > 0);
                     // Scale pixel area higher or lower depending on texture scale
                     F32 min_scale = llmin(fabsf(te->getScaleS()), fabsf(te->getScaleT()));
                     min_scale = llmax(min_scale * min_scale, 0.1f);
@@ -982,26 +965,20 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
                 }
                 assign_size = llmax(assign_size, vsize);
                 assign_importance += importance;
-                return vsize;
-            });
+            }
         }
     }
     if (check_faces)
     {
         bool in_frustum = (assign_importance > 0);
         // If texture is used for an animation, increase it's size
-        assign_size *= (float) llmax(pow((bool(for_anim) && in_frustum) * 2, 4), 1);
+        assign_size *= (float) llmax(pow((int)(for_anim > 0 && in_frustum) * 2, 4), 1);
         // Increase importance if used in an animation in frustum, a HUD or a particle.
-        assign_importance += (float) ((0.6 * (int) bool(for_anim) * (int) in_frustum) + (1 * (int)bool(for_hud)) + (1 * (int)bool(for_particle)));
-        // Assign BOOST_HIGH if used on a particle.
-        assign_boost += for_particle;
-        // Apply change to boost level and adjust size to max.
-        if (assign_boost > 0 && imagep->getBoostLevel() <= 0)
-            imagep->setBoostLevel(LLViewerTexture::BOOST_HIGH);
-        if (imagep->getBoostLevel() > 0)
-            assign_size = MAX_IMAGE_AREA;
+        assign_importance += (float) ((0.6 * (int)(for_anim > 0) * (int) in_frustum) + (1 * (int)(for_hud > 0)) + (1 * (int)(for_particle > 0)));
         // Increase importance if used for Sculpty mesh
-        assign_importance += imagep->isForSculptOnly();
+        assign_importance += (int)imagep->isForSculptOnly();
+        if (imagep->getBoostLevel() > 0 || num_faces > max_faces_to_check)
+            assign_size = MAX_IMAGE_AREA;
         // Adjust assigned size based on sliding scale of importance and current discard bias.
         if (assign_importance < (float)llmax(((LLViewerTexture::sDesiredDiscardBias - 1) * 0.20), 0))
             assign_size /= (float)llmax(pow((LLViewerTexture::sDesiredDiscardBias - 1), 4), 1);
@@ -1015,7 +992,7 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
             imagep->getDesiredDiscardLevel() != imagep->getDiscardLevel());
         // Store the importance with the image to use for prioritization later.
         imagep->setMaxFaceImportance(assign_importance);
-
+        imagep->processTextureStats();
     }
 
     F32 lazy_flush_timeout = 30.f;  // Delete after n seconds, or 0 to not delete until VRAM threshold reached.
@@ -1081,7 +1058,6 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
         return false;
     }
 
-    imagep->processTextureStats();
     return needs_fetch;
 }
 
