@@ -2132,6 +2132,10 @@ bool LLViewerFetchedTexture::updateFetch()
         LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - do not LOD adjust Boost");
             make_request = false;
     }
+    else if (isInactive() || isDeletionCandidate()) {
+        LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - do not fetch inactive or deletion candidates");
+        make_request = false;
+    }
     /*
     //else if (hasCameraChanged(5) && (!forSculpt() || importance <= 0.0f || desired_discard > 2))
     else if (hasCameraChanged(5) && importance <= 0.0f && !forSculpt())
