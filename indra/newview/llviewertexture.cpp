@@ -2242,7 +2242,7 @@ bool LLViewerFetchedTexture::updateFetch()
             LL_WARNS_ONCE() << "fetchRequest: " << mID << " " << (S32) getType() << " wXh " << w << " x " << h
                        << " Current: " << current_discard << " Current Size: " << mGLTexturep->getWidth(current_discard) << " x "
                        << mGLTexturep->getHeight(current_discard) << " previous: " << (S32) mRequestedDiscardLevel
-                       << " Desired: " << desired_discard << " mFaceList->size(): " << (S32) mFaceList->size()
+                            << " Desired: " << desired_discard << " mTextureState: " << (S32) mTextureState
                        << " needsAux(): " << (S32) needsAux() << " getFTType(): " << getFTType() << " forSculpt(): " << forSculpt()
                        << " mForceToSaveRawImage: " << mForceToSaveRawImage << " mSavedRawDiscardLevel: " << mSavedRawDiscardLevel
                        << " mBoostLevel: " << mBoostLevel

@@ -980,12 +980,8 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
         if (imagep->getBoostLevel() > 0 || num_faces > max_faces_to_check)
             assign_size = MAX_IMAGE_AREA;
         // Adjust assigned size based on sliding scale of importance and current discard bias.
-        if (assign_importance < (float)llmax(((LLViewerTexture::sDesiredDiscardBias - 1) * 0.20), 0))
+        if (for_hud == 0 && assign_importance < (float) llmax(((LLViewerTexture::sDesiredDiscardBias - 1) * 0.20), 0))
             assign_size /= (float)llmax(pow((LLViewerTexture::sDesiredDiscardBias - 1), 4), 1);
-        if (for_hud > 0) // HUDs to use max image size
-            assign_size = MAX_IMAGE_AREA;
-        if (for_particle > 0)
-            assign_size = llmax(assign_size, (256 * 256));
         // Assign size to image and find out if a fetch is necessary
         //      from mMaxVirtualSize changing or discard not correct.
         needs_fetch = (imagep->addTextureStats(assign_size) ||
@@ -1017,9 +1013,11 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
     }
     else
     {
+        /* <TommyTheTerrible - Removed to only reset when texture is active.>
         // still referenced outside of image list, reset timer
         imagep->getLastReferencedTimer()->reset();
 
+        */
         if (imagep->hasSavedRawImage())
         {
             if (imagep->getElapsedLastReferencedSavedRawImageTime() > max_inactive_time)
