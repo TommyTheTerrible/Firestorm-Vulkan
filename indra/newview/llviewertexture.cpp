@@ -83,7 +83,6 @@ LLPointer<LLViewerTexture>        LLViewerTexture::sCheckerBoardImagep = nullptr
 LLPointer<LLViewerFetchedTexture> LLViewerFetchedTexture::sMissingAssetImagep = nullptr;
 LLPointer<LLViewerFetchedTexture> LLViewerFetchedTexture::sWhiteImagep = nullptr;
 LLPointer<LLViewerFetchedTexture> LLViewerFetchedTexture::sDefaultParticleImagep = nullptr;
-LLPointer<LLViewerFetchedTexture> LLViewerFetchedTexture::sDefaultParticleImagep = nullptr;
 LLPointer<LLViewerFetchedTexture> LLViewerFetchedTexture::sDefaultImagep = nullptr;
 LLPointer<LLViewerFetchedTexture> LLViewerFetchedTexture::sSmokeImagep = nullptr;
 LLPointer<LLViewerFetchedTexture> LLViewerFetchedTexture::sFlatNormalImagep = nullptr;
@@ -2226,7 +2225,7 @@ bool LLViewerFetchedTexture::updateFetch()
         S32 worker_discard = -1;
         fetch_request_response = LLAppViewer::getTextureFetch()->createRequest(mFTType, mUrl, getID(), getTargetHost(), decode_priority,
                                                                               w, h, c, desired_discard, needsAux(), mCanUseHTTP);
-        if (fetch_request_discard == -1)
+        if (fetch_request_response == -1)
         {
             LL_WARNS_ONCE() << "fetchRequest: " << mID << " " << (S32) getType() << " wXh " << w << " x " << h
                        << " Current: " << current_discard << " Current Size: " << mGLTexturep->getWidth(current_discard) << " x "
@@ -2236,11 +2235,11 @@ bool LLViewerFetchedTexture::updateFetch()
                        << " mForceToSaveRawImage: " << mForceToSaveRawImage << " mSavedRawDiscardLevel: " << mSavedRawDiscardLevel
                        << " mBoostLevel: " << mBoostLevel
                        << " mMaxVirtualSize:" << (S32)mMaxVirtualSize
-                       << " fetch_request_discard: " << (S32) fetch_request_discard << " sDesiredDiscardBias: " << LLViewerTexture::sDesiredDiscardBias
+                       << " fetch_request_discard: " << (S32) fetch_request_response << " sDesiredDiscardBias: " << LLViewerTexture::sDesiredDiscardBias
                        << LL_ENDL;
         }
-        mLastFetchState = fetch_request_discard;
-        if (fetch_request_discard >= 0)
+        mLastFetchState = fetch_request_response;
+        if (fetch_request_response >= 0)
         {
             mLastUpdateFrame = LLViewerOctreeEntryData::getCurrentFrame();
             LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - request created");
@@ -2658,7 +2657,7 @@ bool LLViewerFetchedTexture::doLoadedCallbacks()
     if (mIsRawImageValid)
     {
         // If we have an existing raw image, we have a baseline for the raw and auxiliary quality levels.
-        current_raw_discard = mRawDiscardLevel;
+        //current_raw_discard = mRawDiscardLevel;
         best_raw_discard = llmin(best_raw_discard, mRawDiscardLevel);
         best_aux_discard = llmin(best_aux_discard, mRawDiscardLevel); // We always decode the aux when we decode the base raw
         current_aux_discard = llmin(current_aux_discard, best_aux_discard);
@@ -3124,8 +3123,6 @@ LLViewerLODTexture::LLViewerLODTexture(const std::string& url, FTType f_type, co
 void LLViewerLODTexture::init(bool firstinit)
 {
     mTexelsPerImage = 64*64;
-    mDiscardVirtualSize = 0.f;
-    mCalculatedDiscardLevel = -1.f;
     mLastUpdateFrame = 0; // <FS:3T> Tracking last frame a texture was updated.
 }
 
@@ -3181,6 +3178,7 @@ void LLViewerLODTexture::processTextureStats()
         mDesiredDiscardLevel = llmin(mMinDesiredDiscardLevel, (S8)(MAX_DISCARD_LEVEL));
         // </FS:minerjr> [FIRE-35081]
         mDesiredDiscardLevel = llmin(mDesiredDiscardLevel, (S32)mLoadedCallbackDesiredDiscardLevel);
+        /* <TommyTheTerrible> Unnecessary component of older brute force texture system.
         // <FS:minerjr> [FIRE-35081] Blurry prims not changing with graphics settings, not happening with SL Viewer
         // Add scale down here as the textures off screen were not getting scaled down properly
         S32 current_discard = getDiscardLevel();
@@ -3192,6 +3190,7 @@ void LLViewerLODTexture::processTextureStats()
             }
         }
         // </FS:minerjr> [FIRE-35081]
+        */
     }
     else if (!mFullWidth  || !mFullHeight)
     {
@@ -3869,11 +3868,12 @@ F32 LLViewerMediaTexture::getMaxVirtualSize()
         return mMaxVirtualSize;
     }
     mUpdateVirtualSizeTime = LLFrameTimer::getFrameCount();
-
+    /* TommyTheTerrible - Not doing this anymore.
     if(!mMaxVirtualSizeResetCounter)
     {
         addTextureStats(0.f, false);//reset
     }
+    */
     // <FS:minerjr> [FIRE-35081] Blurry prims not changing with graphics settings, not happening with SL Viewer
     static LLCachedControl<F32> texture_camera_boost(gSavedSettings, "TextureCameraBoost", 7.f);
     F32 vsize = 0.0f;

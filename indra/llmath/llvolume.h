@@ -928,7 +928,7 @@ public:
     // silhouette edge. See generateSilhouetteVertices for the full logic.
     // Silhouette edges can only be generated for some types of prims. If a
     // silhouette edge cannot be generated, the edge array will be left empty.
-    void generateSilhouetteEdge(const LLVolume* volume, std::vector<S32>& edge) const;
+    void generateSilhouetteEdge(LLVolume* volume, std::vector<S32>& edge);
 
     enum
     {

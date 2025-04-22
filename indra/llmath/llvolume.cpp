@@ -2730,7 +2730,7 @@ bool LLVolume::unpackVolumeFacesInternal(const LLSD& mdl)
 }
 
 
-bool LLVolume::isMeshAssetLoaded() const
+bool LLVolume::isMeshAssetLoaded()
 {
     return mIsMeshAssetLoaded;
 }
@@ -3784,7 +3784,7 @@ S32 LLVolume::getNumTriangles(S32* vcount) const
     return triangle_count;
 }
 
-void LLVolumeFace::generateSilhouetteEdge(const LLVolume* volume, std::vector<S32>& edge) const
+void LLVolumeFace::generateSilhouetteEdge(LLVolume* volume, std::vector<S32>& edge)
 {
     llassert(edge.empty()); // edge is supposed to be a scratch array
 
