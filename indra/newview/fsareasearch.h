@@ -128,6 +128,8 @@ public:
     void onCommitCheckboxRegex();
     bool isSearchableObject (LLViewerObject* objectp, LLViewerRegion* our_region);
     void setFindOwnerText(std::string value);
+    void setFindCreatorText(std::string value);
+    void setFindNameText(std::string value);
 
     std::map<LLUUID, FSObjectProperties> mObjectDetails;
 

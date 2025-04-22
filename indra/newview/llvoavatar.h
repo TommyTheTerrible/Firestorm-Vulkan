@@ -54,6 +54,8 @@
 #include "llvovolume.h"
 #include "llavatarrendernotifier.h"
 #include "llmodel.h"
+//BD - Poser
+#include "bdanimator.h"
 
 extern const LLUUID ANIM_AGENT_BODY_NOISE;
 extern const LLUUID ANIM_AGENT_BREATHE_ROT;
@@ -66,6 +68,8 @@ extern const LLUUID ANIM_AGENT_HEAD_ROT;
 extern const LLUUID ANIM_AGENT_PELVIS_FIX;
 extern const LLUUID ANIM_AGENT_TARGET;
 extern const LLUUID ANIM_AGENT_WALK_ADJUST;
+//BD
+extern const LLUUID ANIM_BD_POSING_MOTION;
 
 class LLViewerWearable;
 class LLVoiceVisualizer;
@@ -289,6 +293,8 @@ public:
     void            idleUpdateMisc(bool detailed_update);
     virtual void    idleUpdateAppearanceAnimation();
     void            idleUpdateLipSync(bool voice_enabled);
+    S32             countMeshAttachments(bool loaded);
+    S32             countChildMeshAttachments(LLViewerObject *child, bool loaded);
     void            idleUpdateLoadingEffect();
     void            idleUpdateWindEffect();
     void            idleUpdateNameTag(const LLVector3& root_pos_last);
@@ -1299,9 +1305,33 @@ public:
     // COF version of last appearance message received for this av.
     S32 mLastUpdateReceivedCOFVersion;
 
+    S32 mNumSameCOFVersion;
+
 /**                    Diagnostics
  **                                                                            **
  *******************************************************************************/
+
+/********************************************************************************
+ **                                                                            **
+ **                    POSER
+ **/
+
+    //--------------------------------------------------------------------
+    //BD - Custom Posing
+    //--------------------------------------------------------------------
+public:
+    void            setPosing()             { mIsPosing = true; }
+    void            clearPosing()           { mIsPosing = false; }
+    bool            getPosing()             { return mIsPosing; }
+    void            clearAnimList()         { mAnimatorActions.clear(); }
+
+    bool            mIsPosing;
+    S32             getCurrentActionIndex() { return mCurrentAction; }
+
+    std::vector<Action>             mAnimatorActions;
+    LLFrameTimer                    mAnimPlayTimer;
+    F32                             mExpiryTime;
+    S32                             mCurrentAction;
 
 /********************************************************************************
  **                                                                            **

@@ -24,6 +24,9 @@
  * $/LicenseInfo$
  */
 
+#if __has_include(<execution>)
+#include <execution>
+#endif
 #include "llviewerprecompiledheaders.h"
 
 #include "llviewerdisplay.h"
@@ -140,6 +143,14 @@ U32 gRecentFrameCount = 0; // number of 'recent' frames
 LLFrameTimer gRecentFPSTime;
 LLFrameTimer gRecentMemoryTime;
 LLFrameTimer gAssetStorageLogTime;
+
+F32 frame_sort_avg = 0;
+F32 frame_text_avg = 0;
+F32 frame_obj_avg  = 0;
+F32 frame_draw_avg = 0;
+F32 frame_clear_avgs = 0;
+F32 frame_secpart_avg = 0;
+F32 frame_geom_avg = 0;
 
 // Rendering stuff
 void pre_show_depth_buffer();
@@ -449,11 +460,19 @@ static void update_tp_display(bool minimized)
     }
 }
 
+bool hasCameraChanged(int frames)
+{
+    if ((LLViewerOctreeEntryData::getCurrentFrame() - LLViewerRegion::sLastCameraUpdated) <= frames)
+        return true;
+    return false;
+}
+
 // Paint the display!
 void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
 {
     LL_PROFILE_ZONE_NAMED_CATEGORY_DISPLAY("Render");
-
+    S32 current_frame = LLViewerOctreeEntryData::getCurrentFrame();
+    LLTimer drawtimer;
     LLPerfStats::RecordSceneTime T (LLPerfStats::StatType_t::RENDER_DISPLAY); // render time capture - This is the main stat for overall rendering.
 
     LLViewerCamera& camera = LLViewerCamera::instance(); // <FS:Ansariel> Factor out calls to getInstance
@@ -849,7 +868,7 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
             LLHUDObject::updateAll();
             stop_glerror();
         }
-
+        LLTimer objtimer;
         {
             LL_PROFILE_ZONE_NAMED_CATEGORY_DISPLAY("Update Geom");
             const F32 max_geom_update_time = 0.005f*10.f*gFrameIntervalSeconds.value(); // 50 ms/second update time
@@ -858,6 +877,14 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
             gPipeline.updateGeom(max_geom_update_time);
             stop_glerror();
         }
+        F32 obj_time = objtimer.getElapsedTimeF32() * 1000;
+        frame_obj_avg += obj_time;
+        frame_obj_avg /= 2;
+        if (gRecentFrameCount == 1 && current_frame > 500)
+        {
+            LL_WARNS() << "O frames: " << frame_obj_avg << LL_ENDL;
+        }
+        objtimer.stop();
 
         gPipeline.updateGL();
 
@@ -933,7 +960,7 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
             }
             glClear(GL_DEPTH_BUFFER_BIT);
         }
-
+        LLTimer texttimer;
         //////////////////////////////////////
         //
         // Update images, using the image stats generated during object update/culling
@@ -958,8 +985,8 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
 
             {
                 LL_PROFILE_ZONE_NAMED_CATEGORY_DISPLAY("List");
-                F32 max_image_decode_time = 0.050f*gFrameIntervalSeconds.value(); // 50 ms/second decode time
-                max_image_decode_time = llclamp(max_image_decode_time, 0.002f, 0.005f ); // min 2ms/frame, max 5ms/frame)
+                F32 max_image_decode_time = gFrameIntervalSeconds.value() / 8; // Use upwards of 1/8th frame time on texture checks
+                //max_image_decode_time = llclamp(max_image_decode_time, 0.005f, 0.010f ); // min 2ms/frame, max 5ms/frame)
                 gTextureList.updateImages(max_image_decode_time);
             }
 
@@ -969,6 +996,15 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
                 gGLTFMaterialList.flushMaterials();
             }
         }
+
+        F32 text_time = (F32) texttimer.getElapsedTimeF32() * 1000;
+        frame_text_avg += text_time;
+        frame_text_avg /= 2;
+        if (gRecentFrameCount == 1 && current_frame > 500)
+        {
+            LL_WARNS() << "T frames: " << frame_text_avg << LL_ENDL;
+        }
+        texttimer.stop();
 
         LLGLState::checkStates();
 
@@ -1084,6 +1120,7 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
 
         gGL.setColorMask(true, false);
 
+        LLTimer geomtimer;
         LLAppViewer::instance()->pingMainloopTimeout("Display:RenderGeom");
 
         if (!(LLAppViewer::instance()->logoutRequestSent() && LLAppViewer::instance()->hasSavedFinalSnapshot())
@@ -1120,7 +1157,15 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
             gGL.setColorMask(true, true);
             gPipeline.renderGeomDeferred(*LLViewerCamera::getInstance(), true);
         }
-
+        F32 geom_time = geomtimer.getElapsedTimeF32() * 1000;
+        frame_geom_avg += geom_time;
+        frame_geom_avg /= 2;
+        if (gRecentFrameCount == 1 && current_frame > 500)
+        {
+            LL_WARNS() << "Render frames: " << frame_geom_avg << LL_ENDL;
+        }
+        geomtimer.stop();
+        LLTimer rendertimer;
         {
             LL_PROFILE_ZONE_NAMED_CATEGORY_DISPLAY("Texture Unbind");
             for (S32 i = 0; i < gGLManager.mNumTextureImageUnits; i++)
@@ -1161,6 +1206,15 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
         LLSpatialGroup::sNoDelete = false;
 
         gPipeline.clearReferences();
+
+        F32 render_time = rendertimer.getElapsedTimeF32() * 1000;
+        frame_secpart_avg += render_time;
+        frame_secpart_avg /= 2;
+        if (gRecentFrameCount == 1 && current_frame > 500)
+        {
+            LL_WARNS() << "Unbind frames: " << frame_secpart_avg << LL_ENDL;
+        }
+        rendertimer.stop();
     }
 
     LLAppViewer::instance()->pingMainloopTimeout("Display:FrameStats");
@@ -1192,6 +1246,25 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
             LL_INFOS() << "(also dumped to " << std::quoted(report_name) << ")" << LL_ENDL;
         }
     }
+    
+    F32 draw_time = drawtimer.getElapsedTimeF32() * 1000;
+    frame_draw_avg += draw_time;
+    frame_draw_avg /= 2;
+    if (gRecentFrameCount == 1 && current_frame > 500)
+    {
+        LL_WARNS() << "D frames: " << frame_draw_avg << LL_ENDL;
+        LL_WARNS() << "Frame time: " << gFrameIntervalSeconds.value() << LL_ENDL;
+    }
+    drawtimer.stop();
+    if (gRecentFrameCount == 1 && current_frame > 500)
+    {
+        S32 sculpties = gTextureList.getNumSculpt();
+        LL_WARNS() << "Objects: " << gObjectList.getNumObjects()
+            << " active: " << gObjectList.getNumActiveObjects()
+            << " orphans: " << gObjectList.getOrphanCount()
+            << " sculpt: " << sculpties
+            << LL_ENDL;
+    }    
 }
 
 void getProfileStatsContext(boost::json::object& stats)

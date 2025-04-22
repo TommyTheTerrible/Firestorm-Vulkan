@@ -65,6 +65,24 @@ enum ETexListType
     TEX_LIST_SCALE
 };
 
+struct vigna_hash
+{
+    static uint64_t splitmix64(uint64_t x)
+    {
+        // http://xorshift.di.unimi.it/splitmix64.c
+        x += 0x9e3779b97f4a7c15;
+        x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
+        x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
+        return x ^ (x >> 31);
+    }
+
+    size_t operator()(uint64_t x) const
+    {
+        static const uint64_t FIXED_RANDOM = std::chrono::steady_clock::now().time_since_epoch().count();
+        return splitmix64(x + FIXED_RANDOM);
+    }
+};
+
 struct LLTextureKey
 {
     LLTextureKey();
@@ -131,6 +149,7 @@ public:
 
     // Using image stats, determine what images are necessary, and perform image updates.
     void updateImages(F32 max_time);
+    void postProcessImages(F32 max_time);
     void forceImmediateUpdate(LLViewerFetchedTexture* imagep) ;
 
     // Decode and create textures for all images currently in list.
@@ -139,7 +158,7 @@ public:
     void handleIRCallback(void **data, const S32 number);
 
     S32 getNumImages()                  { return static_cast<S32>(mImageList.size()); }
-
+    S32 getNumSculpt();
     // Local UI images
     // Local UI images
     void doPreloadImages();
@@ -148,14 +167,12 @@ public:
 
     void clearFetchingRequests();
 
-    // do some book keeping on the specified texture
-    // - updates decode priority
-    // - updates desired discard level
-    // - cleans up textures that haven't been referenced in awhile
-    void updateImageDecodePriority(LLViewerFetchedTexture* imagep, bool flush_images = true);
+    bool updateImageDecodePriority(LLViewerFetchedTexture *imagep, bool check_faces = true);
 
-private:
+
+  private:
     F32  updateImagesCreateTextures(F32 max_time);
+    F32  updateBoostImagesFetchTextures(F32 max_time);
     F32  updateImagesFetchTextures(F32 max_time);
     void updateImagesUpdateStats();
     F32  updateImagesLoadingFastCache(F32 max_time);
@@ -217,7 +234,7 @@ private:    // PoundLife - Improved Object Inspect
     { return getImage(image_id, f_type, true, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE, 0, 0, host); }
 
 public:
-    typedef std::unordered_set<LLPointer<LLViewerFetchedTexture> > image_list_t;
+    typedef std::unordered_set<LLPointer<LLViewerFetchedTexture>, vigna_hash> image_list_t;
     typedef std::queue<LLPointer<LLViewerFetchedTexture> > image_queue_t;
 
     // images that have been loaded but are waiting to be uploaded to GL
@@ -231,6 +248,8 @@ public:
 
     bool mForceResetTextureStats;
 
+    std::unordered_set<LLPointer<LLViewerTexture>, vigna_hash> mMarkedTextures;
+
     // to make "for (auto& imagep : gTextureList)" work
     const image_list_t::const_iterator begin() const { return mImageList.cbegin(); }
     const image_list_t::const_iterator end() const { return mImageList.cend(); }
@@ -242,6 +261,7 @@ private:
     typedef std::map< LLTextureKey, LLPointer<LLViewerFetchedTexture> > uuid_map_t;
     uuid_map_t mUUIDMap;
     LLTextureKey mLastUpdateKey;
+    LLTextureKey mLastBoostUpdateKey;
 
     image_list_t mImageList;
 

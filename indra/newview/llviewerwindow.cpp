@@ -1034,10 +1034,10 @@ public:
         }
 
         // <FS:ND> Report amount of failed texture buffer allocations if any.
-        if (LLImageBase::getAllocationErrors())
-        {
-            addText(xpos, ypos, llformat("# textures discarded due to insufficient memory %ld", LLImageBase::getAllocationErrors()));
-        }
+        //if (LLImageBase::getAllocationErrors())
+        //{
+        //    addText(xpos, ypos, llformat("# textures discarded due to insufficient memory %ld", LLImageBase::getAllocationErrors()));
+        //}
         // </FS:ND>
     }
 
@@ -2117,7 +2117,8 @@ LLViewerWindow::LLViewerWindow(const Params& p)
 
     // Init the image list.  Must happen after GL is initialized and before the images that
     // LLViewerWindow needs are requested, as well as before LLViewerMedia starts updating images.
-    LLImageGL::initClass(mWindow, LLViewerTexture::MAX_GL_IMAGE_CATEGORY, false, gSavedSettings.getBOOL("RenderGLMultiThreadedTextures"), gSavedSettings.getBOOL("RenderGLMultiThreadedMedia"));
+    //LLImageGL::initClass(mWindow, LLViewerTexture::MAX_GL_IMAGE_CATEGORY, false, gSavedSettings.getBOOL("RenderGLMultiThreadedTextures"), gSavedSettings.getBOOL("RenderGLMultiThreadedMedia"));
+    LLImageGL::initClass(mWindow, LLViewerTexture::MAX_GL_IMAGE_CATEGORY, false, true, true);
     gTextureList.init();
     LLViewerTextureManager::init() ;
     gBumpImageList.init();

@@ -217,6 +217,11 @@ public:
     LLJoint*        mFootRightp{ nullptr };
     LLJoint*        mWristLeftp{ nullptr };
     LLJoint*        mWristRightp{ nullptr };
+    // BD
+    LLJoint*        mShoulderRightp{ nullptr };
+    LLJoint*        mShoulderLeftp{ nullptr };
+    LLJoint*        mElbowRightp{ nullptr };
+    LLJoint*        mElbowLeftp{ nullptr };
 
     //--------------------------------------------------------------------
     // XML parse tree

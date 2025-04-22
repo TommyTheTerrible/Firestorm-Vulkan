@@ -68,7 +68,7 @@ std::set<LLViewerFetchedTexture*> LLTextureView::sDebugImages;
 
 ////////////////////////////////////////////////////////////////////////////
 
-static std::string title_string1a("Tex UUID Area  DDis(Req)  DecodePri(Fetch)     [download] pk/max");
+static std::string title_string1a("UUID       Area D(R)   Imp FFT(Bst) s/h/p   Download pk/max");
 static std::string title_string1b("Tex UUID Area  DDis(Req)  Fetch(DecodePri)     [download] pk/max");
 static std::string title_string2("State");
 static std::string title_string3("Pkt Bnd");
@@ -198,12 +198,23 @@ void LLTextureBar::draw()
     std::string uuid_str;
     mImagep->mID.toString(uuid_str);
     uuid_str = uuid_str.substr(0,7);
+    std::string boost_space;
+    if (mImagep->mBoostLevel < 10)
+        boost_space = " "; // Formating space to keep columns in line when boost is one digit
 
-    tex_str = llformat("%s %7.0f %d(%d)",
+    tex_str = llformat("%s %7.0f %d(%d)  %0.2f  %d(%d) %s  %d/%d/%d",
         uuid_str.c_str(),
         mImagep->mMaxVirtualSize,
         mImagep->mDesiredDiscardLevel,
-        mImagep->mRequestedDiscardLevel);
+        mImagep->mRequestedDiscardLevel,
+        mImagep->mMaxFaceImportance,
+        mImagep->mFTType,
+        mImagep->mBoostLevel,
+        boost_space,
+        mImagep->mForSculpt,
+        mImagep->mForHUD,
+        mImagep->mForParticle
+    );
 
 
     LLFontGL::getFontMonospace()->renderUTF8(tex_str, 0, title_x1, getRect().getHeight(),
@@ -242,7 +253,7 @@ void LLTextureBar::draw()
     S32 state =
         mImagep->mNeedsCreateTexture ? LAST_STATE+1 :
         mImagep->mFullyLoaded ? LAST_STATE+2 :
-        mImagep->mMinDiscardLevel > 0 ? LAST_STATE+3 :
+        //mImagep->mMinDiscardLevel > 0 ? LAST_STATE+3 : // <TS:3T> Stop expecting all new discards to be lower
         mImagep->mIsMissingAsset ? LAST_STATE+4 :
         !mImagep->mIsFetching ? LAST_STATE+5 :
         mImagep->mFetchState;
@@ -255,7 +266,7 @@ void LLTextureBar::draw()
 
     // Draw the progress bar.
     S32 bar_width = 100;
-    S32 bar_left = 260;
+    S32 bar_left = 280;
     left = bar_left;
     right = left + bar_width;
 
@@ -584,14 +595,15 @@ void LLGLTexMemBar::draw()
     gGL.color4f(0.f, 0.f, 0.f, 0.25f);
     gl_rect_2d(-10, getRect().getHeight() + line_height*2 + 1, getRect().getWidth()+2, getRect().getHeight()+2);
 
-    text = llformat("Est. Free: %d MB Sys Free: %d MB GL Tex: %d MB FBO: %d MB Bias: %.2f Cache: %.1f/%.1f MB",
+    text = llformat("Est. Free: %d MB Sys Free: %d MB GL Tex: %d MB FBO: %d MB Bias: %.2f Cache: %.1f/%.1f MB mVRAM: %d",
                     (S32)LLViewerTexture::sFreeVRAMMegabytes,
                     LLMemory::getAvailableMemKB()/1024,
                     LLImageGL::getTextureBytesAllocated() / 1024 / 1024,
                     LLRenderTarget::sBytesAllocated/(1024*1024),
                     discard_bias,
                     cache_usage,
-                    cache_max_usage);
+                    cache_max_usage,
+                    gGLManager.mVRAM);
     // <FS:Ansariel> Texture memory bars
     //LLFontGL::getFontMonospace()->renderUTF8(text, 0, 0, v_offset + line_height*7,
     LLFontGL::getFontMonospace()->renderUTF8(text, 0, 0, v_offset + line_height*9,
@@ -620,8 +632,8 @@ void LLGLTexMemBar::draw()
     gGL.color4f(0.5f, 0.5f, 0.5f, 0.75f);
     gl_rect_2d(left, top, right, bottom);
 
-    U32 gpu_used = gGLManager.mVRAM - (S32)LLViewerTexture::sFreeVRAMMegabytes;
-    color = (gpu_used < (U32)llfloor(gGLManager.mVRAM * 0.85f)) ? LLColor4::green :
+    S32 gpu_used = gGLManager.mVRAM - (S32)LLViewerTexture::sFreeVRAMMegabytes;
+    color = (gpu_used < llfloor(gGLManager.mVRAM * 0.85f)) ? LLColor4::green :
         (gpu_used < gGLManager.mVRAM) ? LLColor4::yellow : LLColor4::red;
     color[VALPHA] = .75f;
 

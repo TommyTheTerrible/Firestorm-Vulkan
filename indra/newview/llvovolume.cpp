@@ -26,6 +26,9 @@
 
 // A "volume" is a box, cylinder, sphere, or other primitive shape.
 
+#if __has_include(<execution>)
+#include <execution>
+#endif
 #include "llviewerprecompiledheaders.h"
 
 #include "llvovolume.h"
@@ -1046,7 +1049,8 @@ void LLVOVolume::updateTextureVirtualSize(bool forced)
 
         if (mSculptTexture.notNull())
         {
-            mSculptTexture->setForSculpt() ;
+            mSculptTexture->setBoostLevel(llmax((S32) mSculptTexture->getBoostLevel(), (S32) LLGLTexture::BOOST_SCULPTED));
+            mSculptTexture->setForSculpt();
 
             S32 texture_discard = mSculptTexture->getRawImageLevel(); //try to match the texture
             S32 current_discard = getVolume() ? getVolume()->getSculptLevel() : -2 ;
@@ -1181,15 +1185,102 @@ void LLVOVolume::setScale(const LLVector3 &scale, bool damped)
 
 LLFace* LLVOVolume::addFace(S32 f)
 {
+    bool is_pbr = false;
     const LLTextureEntry* te = getTE(f);
     LLViewerTexture* imagep = getTEImage(f);
-    if ( te && te->getMaterialParams().notNull())
+    LLFace *facep = mDrawable->addFace(te, imagep);
+
+    if (te)
     {
-        LLViewerTexture* normalp = getTENormalMap(f);
-        LLViewerTexture* specularp = getTESpecularMap(f);
-        return mDrawable->addFace(te, imagep, normalp, specularp);
+        if (te->getGLTFRenderMaterial())  // Check for PBR first to save a little work later.
+        {
+            LLFetchedGLTFMaterial *gltf_mat = (LLFetchedGLTFMaterial *) te->getGLTFRenderMaterial();
+            is_pbr = gltf_mat != nullptr;
+            if (is_pbr)
+            {
+                // tell texture streaming system to ignore blinn-phong textures
+                facep->setTexture(LLRender::DIFFUSE_MAP, nullptr);
+                facep->setTexture(LLRender::NORMAL_MAP, nullptr);
+                facep->setTexture(LLRender::SPECULAR_MAP, nullptr);
+
+                // let texture streaming system know about PBR textures
+                facep->setTexture(LLRender::BASECOLOR_MAP, gltf_mat->mBaseColorTexture);
+                facep->setTexture(LLRender::GLTF_NORMAL_MAP, gltf_mat->mNormalTexture);
+                facep->setTexture(LLRender::METALLIC_ROUGHNESS_MAP, gltf_mat->mMetallicRoughnessTexture);
+                facep->setTexture(LLRender::EMISSIVE_MAP, gltf_mat->mEmissiveTexture);
+
+                return facep;
+            }
+        }
+
+        if (te->getMaterialParams().notNull())
+        {
+            LLViewerTexture *normalp   = getTENormalMap(f);
+            LLViewerTexture *specularp = getTESpecularMap(f);
+            facep->setTexture(LLRender::NORMAL_MAP, normalp);
+            facep->setTexture(LLRender::SPECULAR_MAP, specularp);
+        }
     }
-    return mDrawable->addFace(te, imagep);
+    
+    return facep;
+}
+
+bool LLVOVolume::isFaceTextured(S32 f)
+{
+    bool                  is_pbr = false;
+    bool                  loaded = true;
+    const LLTextureEntry *te     = getTE(f);
+    LLViewerTexture      *imagep = getTEImage(f);
+
+    if (te)
+    {
+        if (te->getGLTFRenderMaterial())  // Check for PBR first to save a little work later.
+        {
+            LLFetchedGLTFMaterial *gltf_mat = (LLFetchedGLTFMaterial *) te->getGLTFRenderMaterial();
+            is_pbr                          = gltf_mat != nullptr;
+            if (is_pbr)
+            {
+                loaded = loaded && (gltf_mat->mBaseColorTexture->getDiscardLevel() >= 0 || gltf_mat->mBaseColorTexture->isMissingAsset());
+                loaded = loaded && (gltf_mat->mNormalTexture->getDiscardLevel() >= 0 || gltf_mat->mNormalTexture->isMissingAsset());
+                loaded = loaded && (gltf_mat->mMetallicRoughnessTexture->getDiscardLevel() >= 0 ||
+                                    gltf_mat->mMetallicRoughnessTexture->isMissingAsset());
+                loaded = loaded && (gltf_mat->mEmissiveTexture->getDiscardLevel() >= 0 || gltf_mat->mEmissiveTexture->isMissingAsset());
+                return loaded;
+            }
+        }
+
+        if (te->getMaterialParams().notNull())
+        {
+            loaded = loaded && (imagep->getDiscardLevel() >= 0 || imagep->isMissingAsset());
+            loaded = loaded && (getTENormalMap(f)->getDiscardLevel() >= 0 || getTENormalMap(f)->isMissingAsset());
+            loaded = loaded && (getTESpecularMap(f)->getDiscardLevel() >= 0 || getTESpecularMap(f)->isMissingAsset());
+        }
+    }
+
+    return loaded;
+}
+
+bool LLVOVolume::isMeshAssetTextured()
+{
+
+    std::vector<float> work_list(mDrawable->getNumFaces());
+#ifdef __cpp_lib_execution
+    std::generate(std::execution::par_unseq, work_list.begin(), work_list.end(),
+                  [this, n = 0]() mutable
+                  {
+                      return isFaceTextured(n++);
+                  });
+    S32 num_faces_textured = (S32)std::reduce(std::execution::par, work_list.begin(), work_list.end());
+#else
+        std::generate(work_list.begin(), work_list.end(),
+                  [this, n = 0]() mutable
+                  {
+                      return isFaceTextured(n++);
+                  });
+    S32 num_faces_textured = (S32) std::reduce(work_list.begin(), work_list.end());
+#endif
+
+    return bool(num_faces_textured == mDrawable->getNumFaces());
 }
 
 LLDrawable *LLVOVolume::createDrawable(LLPipeline *pipeline)
@@ -1374,6 +1465,9 @@ void LLVOVolume::updateSculptTexture()
 {
     LLPointer<LLViewerFetchedTexture> old_sculpt = mSculptTexture;
 
+    if (mSculptTexture.notNull() && mSculptTexture->isFetching())
+        return;
+
     if (isSculpted() && !isMesh())
     {
         LLSculptParams *sculpt_params = (LLSculptParams *)getParameterEntry(LLNetworkData::PARAMS_SCULPT);
@@ -1383,6 +1477,7 @@ void LLVOVolume::updateSculptTexture()
             mSculptTexture = LLViewerTextureManager::getFetchedTexture(id, FTT_DEFAULT, true, LLGLTexture::BOOST_SCULPTED, LLViewerTexture::LOD_TEXTURE);
             mSculptTexture->forceToSaveRawImage(0, F32_MAX);
             mSculptTexture->setKnownDrawSize(256, 256);
+            mSculptTexture->setForSculpt();
         }
 
         mSkinInfoUnavaliable = false;
@@ -1484,13 +1579,13 @@ void LLVOVolume::sculpt()
             discard_level = mSculptTexture->getSavedRawImageLevel();
         }
 
-        if (!raw_image || raw_image->getWidth() < mSculptTexture->getWidth() || raw_image->getHeight() < mSculptTexture->getHeight())
-        {
-            // last resort, read back from GL
-            mSculptTexture->readbackRawImage();
-            raw_image = mSculptTexture->getRawImage();
-            discard_level = mSculptTexture->getRawImageLevel();
-        }
+        //if (!raw_image || raw_image->getWidth() < mSculptTexture->getWidth() || raw_image->getHeight() < mSculptTexture->getHeight())
+        //{
+        //    // last resort, read back from GL
+        //    mSculptTexture->readbackRawImage();
+        //    raw_image = mSculptTexture->getRawImage();
+        //    discard_level = mSculptTexture->getRawImageLevel();
+        //}
 
         S32 max_discard = mSculptTexture->getMaxDiscardLevel();
         if (discard_level > max_discard)
@@ -1573,6 +1668,16 @@ void LLVOVolume::sculpt()
         }
 
         getVolume()->sculpt(sculpt_width, sculpt_height, sculpt_components, sculpt_data, discard_level, mSculptTexture->isMissingAsset());
+
+        // notify rebuild any other VOVolumes that reference this sculpty volume
+        for (S32 i = 0; i < mSculptTexture->getNumVolumes(LLRender::SCULPT_TEX); ++i)
+        {
+            LLVOVolume* volume = (*(mSculptTexture->getVolumeList(LLRender::SCULPT_TEX)))[i];
+            if (volume != this && volume->getVolume() == getVolume())
+            {
+                gPipeline.markRebuild(volume->mDrawable, LLDrawable::REBUILD_GEOMETRY);
+            }
+        }
     }
 }
 
@@ -6202,6 +6307,8 @@ void LLVolumeGeometryManager::rebuildGeom(LLSpatialGroup* group)
                         facep->setState(LLFace::FULLBRIGHT);
                     }
 
+                    /* //<TS:3T> This loop is running through multiple faces on a per face basis.
+                       //        Moving this to outside the loop to save processing.
                     if (vobj->mTextureAnimp && vobj->mTexAnimMode)
                     {
                         if (vobj->mTextureAnimp->mFace <= -1)
@@ -6225,6 +6332,7 @@ void LLVolumeGeometryManager::rebuildGeom(LLSpatialGroup* group)
                             }
                         }
                     }
+                    */
 
                     if (type == LLDrawPool::POOL_ALPHA)
                     {
@@ -6369,6 +6477,31 @@ void LLVolumeGeometryManager::rebuildGeom(LLSpatialGroup* group)
                 drawablep->clearState(LLDrawable::RIGGED);
                 vobj->updateRiggedVolume(false);
             }
+            // <TS:3T> Texture animation loop to set faces to animated from mTextureAnimp info.
+            if (vobj->mTextureAnimp)
+            {
+                if (vobj->mTextureAnimp->mFace <= -1)
+                {
+                    S32 face;
+                    for (face = 0; face < vobj->getNumTEs(); face++)
+                    {
+                        LLFace* facea = drawablep->getFace(face);
+                        if (facea)
+                        {
+                            facea->setState(LLFace::TEXTURE_ANIM);
+                        }
+                    }
+                }
+                else if (vobj->mTextureAnimp->mFace < vobj->getNumTEs())
+                {
+                    LLFace* facea = drawablep->getFace(vobj->mTextureAnimp->mFace);
+                    if (facea)
+                    {
+                        facea->setState(LLFace::TEXTURE_ANIM);
+                    }
+                }
+            }
+            // </TS:3T>
         }
     }
 
@@ -6450,7 +6583,7 @@ void LLVolumeGeometryManager::rebuildGeom(LLSpatialGroup* group)
     group->clearState(LLSpatialGroup::GEOM_DIRTY | LLSpatialGroup::ALPHA_DIRTY);
 }
 
-void LLVolumeGeometryManager::rebuildMesh(LLSpatialGroup* group)
+void LLVolumeGeometryManager::rebuildMesh(LLSpatialGroup* group) //
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_VOLUME;
     llassert(group);
@@ -6639,8 +6772,8 @@ U32 LLVolumeGeometryManager::genDrawInfo(LLSpatialGroup* group, U32 mask, LLFace
         LLFace* facep = *face_iter;
         LLViewerTexture* tex = facep->getTexture();
         const LLTextureEntry* te = facep->getTextureEntry();
-        LLMaterialPtr mat = te->getMaterialParams();
-        LLMaterialID matId = te->getMaterialID();
+        LLMaterialPtr mat = te ? te->getMaterialParams() : nullptr;
+        LLMaterialID matId = te ? te->getMaterialID() : NULL;
 
         // if (distance_sort)
         // {
@@ -6766,7 +6899,7 @@ U32 LLVolumeGeometryManager::genDrawInfo(LLSpatialGroup* group, U32 mask, LLFace
                 {
                     facep = *i;
                     const LLTextureEntry* nextTe = facep->getTextureEntry();
-                    if (nextTe->getMaterialID() != matId)
+                    if (nextTe && nextTe->getMaterialID() != matId)
                     {
                         break;
                     }
@@ -6846,22 +6979,25 @@ U32 LLVolumeGeometryManager::genDrawInfo(LLSpatialGroup* group, U32 mask, LLFace
                     LLVOVolume* vobj = drawablep->getVOVolume();
                     LLVolume* volume = vobj->getVolume();
 
-                    if (drawablep->isState(LLDrawable::ANIMATED_CHILD))
+                    if (drawablep && vobj)
                     {
-                        vobj->updateRelativeXform(true);
-                    }
+                        if (drawablep && drawablep->isState(LLDrawable::ANIMATED_CHILD))
+                        {
+                            vobj->updateRelativeXform(true);
+                        }
 
-                    U32 te_idx = facep->getTEOffset();
+                        U32 te_idx = facep->getTEOffset();
 
-                    if (!facep->getGeometryVolume(*volume, te_idx,
-                        vobj->getRelativeXform(), vobj->getRelativeXformInvTrans(), index_offset,true))
-                    {
-                        LL_WARNS() << "Failed to get geometry for face!" << LL_ENDL;
-                    }
+                        if (volume && !facep->getGeometryVolume(*volume, te_idx, vobj->getRelativeXform(), vobj->getRelativeXformInvTrans(),
+                                                      index_offset, true))
+                        {
+                            LL_WARNS() << "Failed to get geometry for face!" << LL_ENDL;
+                        }
 
-                    if (drawablep->isState(LLDrawable::ANIMATED_CHILD))
-                    {
-                        vobj->updateRelativeXform(false);
+                        if (drawablep->isState(LLDrawable::ANIMATED_CHILD))
+                        {
+                            vobj->updateRelativeXform(false);
+                        }
                     }
                 }
             }
@@ -6879,7 +7015,7 @@ U32 LLVolumeGeometryManager::genDrawInfo(LLSpatialGroup* group, U32 mask, LLFace
             }
 
             const LLTextureEntry* te = facep->getTextureEntry();
-            LLGLTFMaterial* gltf_mat = te->getGLTFRenderMaterial();
+            LLGLTFMaterial* gltf_mat = te ? te->getGLTFRenderMaterial() : nullptr;
 
             // <FS:Beq> show legacy when editing the fallback materials.
             static LLCachedControl<bool> showSelectedinBP(gSavedSettings, "FSShowSelectedInBlinnPhong");
@@ -6902,7 +7038,7 @@ U32 LLVolumeGeometryManager::genDrawInfo(LLSpatialGroup* group, U32 mask, LLFace
             bool can_be_shiny = false;
 
             // ignore traditional material if GLTF material is present
-            if (gltf_mat == nullptr)
+            if (gltf_mat == nullptr && te)
             {
                 mat = te->getMaterialParams().get();
 
@@ -6915,8 +7051,8 @@ U32 LLVolumeGeometryManager::genDrawInfo(LLSpatialGroup* group, U32 mask, LLFace
                 }
             }
 
-            F32 blinn_phong_alpha = te->getColor().mV[3];
-            bool use_legacy_bump = te->getBumpmap() && (te->getBumpmap() < 18) && (!mat || mat->getNormalID().isNull());
+            F32 blinn_phong_alpha = te ? te->getColor().mV[3] : 0 ;
+            bool use_legacy_bump = te ? te->getBumpmap() && (te->getBumpmap() < 18) && (!mat || mat->getNormalID().isNull()) : false;
             bool blinn_phong_opaque = blinn_phong_alpha >= 0.999f;
             bool blinn_phong_transparent = blinn_phong_alpha < 0.999f;
 
@@ -6950,7 +7086,7 @@ U32 LLVolumeGeometryManager::genDrawInfo(LLSpatialGroup* group, U32 mask, LLFace
                 // things without normals down the materials pipeline and will
                 // render poorly if not crash NORSPEC-240,314
                 //
-                if (te->getFullbright())
+                if (te && te->getFullbright())
                 {
                     if (mat->getDiffuseAlphaMode() == LLMaterial::DIFFUSE_ALPHA_MODE_MASK)
                     {
@@ -6969,7 +7105,7 @@ U32 LLVolumeGeometryManager::genDrawInfo(LLSpatialGroup* group, U32 mask, LLFace
                     }
                     else
                     {
-                        if (mat->getEnvironmentIntensity() > 0 || te->getShiny() > 0)
+                        if (mat->getEnvironmentIntensity() > 0 || (te && te->getShiny() > 0))
                         {
                             material_pass = true;
                         }
@@ -7068,7 +7204,7 @@ U32 LLVolumeGeometryManager::genDrawInfo(LLSpatialGroup* group, U32 mask, LLFace
                     registerFace(group, facep, LLRenderPass::PASS_ALPHA);
                 }
                 else if (gPipeline.shadersLoaded()
-                    && te->getShiny()
+                    && te && te->getShiny()
                     && can_be_shiny)
                 {
                     registerFace(group, facep, fullbright ? LLRenderPass::PASS_FULLBRIGHT_SHINY : LLRenderPass::PASS_SHINY);
@@ -7088,7 +7224,7 @@ U32 LLVolumeGeometryManager::genDrawInfo(LLSpatialGroup* group, U32 mask, LLFace
                 }
                 else if (facep->canRenderAsMask() && !hud_group)
                 {
-                    if (te->getFullbright() || LLPipeline::sNoAlpha)
+                    if ((te && te->getFullbright()) || LLPipeline::sNoAlpha)
                     {
                         registerFace(group, facep, LLRenderPass::PASS_FULLBRIGHT_ALPHA_MASK);
                     }
@@ -7103,6 +7239,7 @@ U32 LLVolumeGeometryManager::genDrawInfo(LLSpatialGroup* group, U32 mask, LLFace
                 }
             }
             else if (gPipeline.shadersLoaded()
+                && te
                 && te->getShiny()
                 && can_be_shiny)
             { //shiny
@@ -7192,6 +7329,7 @@ U32 LLVolumeGeometryManager::genDrawInfo(LLSpatialGroup* group, U32 mask, LLFace
 
                 if (!gPipeline.shadersLoaded() &&
                     !is_alpha &&
+                    te &&
                     te->getShiny())
                 { //shiny as an extra pass when shaders are disabled
                     registerFace(group, facep, LLRenderPass::PASS_SHINY);
@@ -7211,7 +7349,7 @@ U32 LLVolumeGeometryManager::genDrawInfo(LLSpatialGroup* group, U32 mask, LLFace
                 }
             }
 
-            if (!is_alpha && LLPipeline::sRenderGlow && te->getGlow() > 0.f)
+            if (!is_alpha && LLPipeline::sRenderGlow && te && te->getGlow() > 0.f)
             {
                 if (gltf_mat)
                 {

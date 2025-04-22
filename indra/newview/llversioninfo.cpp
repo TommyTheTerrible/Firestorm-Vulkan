@@ -88,17 +88,17 @@ LLVersionInfo::~LLVersionInfo()
 
 S32 LLVersionInfo::getMajor() const
 {
-    return LL_VIEWER_VERSION_MAJOR;
+    return (S32)LL_VIEWER_VERSION_MAJOR;
 }
 
 S32 LLVersionInfo::getMinor() const
 {
-    return LL_VIEWER_VERSION_MINOR;
+    return (S32)LL_VIEWER_VERSION_MINOR;
 }
 
 S32 LLVersionInfo::getPatch() const
 {
-    return LL_VIEWER_VERSION_PATCH;
+    return (S32)LL_VIEWER_VERSION_PATCH;
 }
 
 U64 LLVersionInfo::getBuild() const

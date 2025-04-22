@@ -26,6 +26,7 @@ endmacro()
 # set up platform specific lists of files that need to be copied
 ###################################################################
 if(WINDOWS)
+    include(MESAZINK)
     #*******************************
     # VIVOX - *NOTE: no debug version
     set(vivox_lib_dir "${ARCH_PREBUILT_DIRS_RELEASE}")
@@ -93,6 +94,15 @@ if(WINDOWS)
     if (TARGET ll::openal)
         list(APPEND release_files openal32.dll alut.dll)
     endif ()
+
+    # <TS:3T> Mesa Zink DLLs
+    if( ARCH_PREBUILT_BIN_RELEASE )
+        set(mesazink_src_dir "${ARCH_PREBUILT_BIN_RELEASE}")
+    endif()    
+    if(ADDRESS_SIZE EQUAL 64)    
+        set(mesazink_files libgallium_wgl.dll opengl32.dll libglapi.dll)
+    endif(ADDRESS_SIZE EQUAL 64)
+    # </TS:3T>
 
     #*******************************
     # Copy MS C runtime dlls, required for packaging.

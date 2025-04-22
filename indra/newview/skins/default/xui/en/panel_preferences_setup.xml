@@ -406,8 +406,8 @@
 		 increment="64"
 		 initial_value="1024"
 		 layout="topleft"
-		 max_val="20000"
-		 min_val="256"
+		 max_val="40000"
+		 min_val="4000"
 		 top_pad="10"
 		 name="cache_size"
 		 width="279" />
@@ -446,8 +446,8 @@
 		 increment="64"
 		 initial_value="1024"
 		 layout="topleft"
-		 max_val="20000"
-		 min_val="256"
+		 max_val="40000"
+		 min_val="4000"
 		 top_pad="10"
 		 name="asset_cache_size"
 		 width="279" />

@@ -425,6 +425,16 @@ private:
     LLFrameTimer    mTypingTimer;
 
     //--------------------------------------------------------------------
+    //BD - Custom Posing
+    //--------------------------------------------------------------------
+public:
+    void            setPosing()             { mIsPosing = true; }
+    void            clearPosing()           { mIsPosing = false; }
+    bool            getPosing() const       { return mIsPosing; }
+
+    bool            mIsPosing;
+
+    //--------------------------------------------------------------------
     // AFK
     //--------------------------------------------------------------------
 public:
@@ -986,6 +996,9 @@ public:
     bool            setGroupContribution(const LLUUID& group_id, S32 contribution);
     bool            setUserGroupFlags(const LLUUID& group_id, bool accept_notices, bool list_in_profile);
     const std::string &getGroupName() const     { return mGroupName; }
+    std::string     mGroupStream; // <TS:3T> Used to store Group Stream URL
+    void            setGroupStream(std::string stream); //<TS:3T> Starts Group Stream logic.
+    void            checkGroupStream(std::string group_charter); // <TS:3T> Checks group charter for formatted group stream url.
     bool            canJoinGroups() const;
 private:
     std::string     mGroupName;

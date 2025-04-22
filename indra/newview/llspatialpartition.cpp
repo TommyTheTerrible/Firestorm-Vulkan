@@ -592,7 +592,7 @@ LLSpatialGroup::LLSpatialGroup(OctreeNode* node, LLSpatialPartition* part) : LLO
 {
     ll_assert_aligned(this,16);
 
-    sNodeCount++;
+    mNodeNum = sNodeCount++; // <TS:3T> Record spactial group's node number to help with debugging.
 
     mViewAngle.splat(0.f);
     mLastUpdateViewAngle.splat(-1.f);
@@ -606,6 +606,7 @@ LLSpatialGroup::LLSpatialGroup(OctreeNode* node, LLSpatialPartition* part) : LLO
 
     mRadius = 1;
     mPixelArea = 1024.f;
+    mMIPMax = 0;
 }
 
 void LLSpatialGroup::updateDistance(LLCamera &camera)
@@ -634,6 +635,21 @@ void LLSpatialGroup::updateDistance(LLCamera &camera)
                         (F32) mOctreeNode->getSize().getLength3().getF32();
         mDistance = getSpatialPartition()->calcDistance(this, camera);
         mPixelArea = getSpatialPartition()->calcPixelArea(this, camera);
+        //F32 new_mip = (F32)ceil(log(sqrt(mPixelArea)) / log(2));
+        F32 new_mip = (F32)(std::round((log(sqrt(mPixelArea)) / log(2)) * 20) / 20); // Round to 1/5th increments
+        if (mMIPMax != new_mip)  // <TS:3T> Make LOD changes depending on MIP scale
+        {
+            if (getSpatialPartition()->mPartitionType != LLViewerRegion::PARTITION_TERRAIN)
+            {
+                for (LLSpatialGroup::element_iter i = getDataBegin(); i != getDataEnd(); i++)
+                {
+                    LLDrawable* drawablep = (LLDrawable*) (*i)->getDrawable();
+                    gPipeline.mMarkedDrawables.push(drawablep);
+                }
+            }
+            
+        }
+        mMIPMax = new_mip;
     }
 }
 

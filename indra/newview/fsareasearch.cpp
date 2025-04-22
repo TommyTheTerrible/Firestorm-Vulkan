@@ -1361,6 +1361,15 @@ void FSAreaSearch::setFindOwnerText(std::string value)
     mPanelFind->mOwnerLineEditor->setText(value);
 }
 
+void FSAreaSearch::setFindCreatorText(std::string value)
+{
+    mPanelFind->mCreatorLineEditor->setText(value);
+}
+
+void FSAreaSearch::setFindNameText(std::string value)
+{
+    mPanelFind->mNameLineEditor->setText(value);
+}
 
 //---------------------------------------------------------------------------
 // List panel

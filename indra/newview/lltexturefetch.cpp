@@ -1065,30 +1065,14 @@ void LLTextureFetchWorker::setupPacketData()
 // Locks:  Mw (ctor invokes without lock)
 void LLTextureFetchWorker::setDesiredDiscard(S32 discard, S32 size)
 {
-    bool prioritize = false;
-    if (mDesiredDiscard != discard)
+    //<TS:3T> Change discard and size if either not equal and reset state if done.
+    if (mDesiredDiscard != discard || size != mDesiredSize)
     {
-        if (!haveWork())
-        {
-            if (!mFetcher->mDebugPause)
-            {
-                addWork(0);
-            }
-        }
-        else if (mDesiredDiscard < discard)
-        {
-            prioritize = true;
-        }
         mDesiredDiscard = discard;
         mDesiredSize = size;
     }
-    else if (size > mDesiredSize)
-    {
-        mDesiredSize = size;
-        prioritize = true;
-    }
     mDesiredSize = llmax(mDesiredSize, TEXTURE_CACHE_ENTRY_SIZE);
-    if ((prioritize && mState == INIT) || mState == DONE)
+    if (mState == DONE)
     {
         setState(INIT);
     }
@@ -1248,7 +1232,8 @@ bool LLTextureFetchWorker::doWork(S32 param)
         mDesiredSize = llmax(mDesiredSize, TEXTURE_CACHE_ENTRY_SIZE); // min desired size is TEXTURE_CACHE_ENTRY_SIZE
         LL_DEBUGS(LOG_TXT) << mID << ": Priority: " << llformat("%8.0f",mImagePriority)
                            << " Desired Discard: " << mDesiredDiscard << " Desired Size: " << mDesiredSize << LL_ENDL;
-
+        //if (mDesiredSize == 0)
+        //    setState(DONE);
         // fall through
     }
 
@@ -1973,14 +1958,14 @@ bool LLTextureFetchWorker::doWork(S32 param)
         S32 discard = mHaveAllData && mFormattedImage->getCodec() != IMG_CODEC_J2C ? 0 : mLoadedDiscard;
         mDecoded  = false;
         setState(DECODE_IMAGE_UPDATE);
-        LL_DEBUGS(LOG_TXT) << mID << ": Decoding. Bytes: " << mFormattedImage->getDataSize() << " Discard: " << discard
+        LL_DEBUGS(LOG_TXT) << mID << ": Decoding. Bytes: " << mFormattedImage->getDataSize() << " Discard: " << mDesiredDiscard
                            << " All Data: " << mHaveAllData << LL_ENDL;
 
         // In case worked manages to request decode, be shut down,
         // then init and request decode again with first decode
         // still in progress, assign a sufficiently unique id
         mDecodeHandle = LLAppViewer::getImageDecodeThread()->decodeImage(mFormattedImage,
-                                                                       discard,
+                                                                       mDesiredDiscard,
                                                                        mNeedsAux,
                                                                        new DecodeResponder(mFetcher, mID, this));
         if (mDecodeHandle == 0)
@@ -2103,7 +2088,7 @@ bool LLTextureFetchWorker::doWork(S32 param)
     if (mState == DONE)
     {
         LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("tfwdw - DONE"); //<FS:Beq/> fix incorrect category
-        if (mDecodedDiscard >= 0 && mDesiredDiscard < mDecodedDiscard)
+        if (mDecodedDiscard >= 0 && mDesiredDiscard != mDecodedDiscard) // <TS:3T> Stop expecting all new discards to be lower
         {
             // More data was requested, return to INIT
             setState(INIT);
@@ -2600,7 +2585,9 @@ void LLTextureFetchWorker::callbackDecoded(bool success, const std::string &erro
     }
     else
     {
-        LL_WARNS(LOG_TXT) << "DECODE FAILED: " << mID << " Discard: " << (S32)mFormattedImage->getDiscardLevel() << ", reason: " << error_message << LL_ENDL;
+        LL_WARNS(LOG_TXT) << "DECODE FAILED: " << mID
+                          << " Size: " << llformat("%dx%d", mFormattedImage->getWidth(), mFormattedImage->getHeight()) << " Type: " << (S32)mType
+                          << " Discard: " << (S32) mFormattedImage->getDiscardLevel() << ", reason: " << error_message << LL_ENDL;
         removeFromCache();
         mDecodedDiscard = -1; // Redundant, here for clarity and paranoia
     }
@@ -2820,8 +2807,9 @@ S32 LLTextureFetch::createRequest(FTType f_type, const std::string& url, const L
     {
         // If the requester knows nothing about the file, we fetch the smallest
         // amount of data at the lowest resolution (highest discard level) possible.
-        desired_size = TEXTURE_CACHE_ENTRY_SIZE;
+        //desired_size = TEXTURE_CACHE_ENTRY_SIZE;        
         desired_discard = MAX_DISCARD_LEVEL;
+        desired_size = LLImageJ2C::calcDataSizeJ2C(0, 0, 4, desired_discard);
     }
 
 

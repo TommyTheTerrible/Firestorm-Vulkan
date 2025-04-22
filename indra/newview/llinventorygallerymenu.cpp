@@ -916,9 +916,12 @@ void LLInventoryGalleryContextMenu::updateMenuItemsVisibility(LLContextMenu* men
             {
                 if(obj->getType() == LLAssetType::AT_OBJECT)
                 {
-                    items.push_back(std::string("Wearable Add"));
+                    disabled_items.push_back(std::string("Wearable And Object Wear"));  // <TS:3T> Disable Wearing Objects, only Add.
+                    items.push_back(std::string("Wearable Add"));                    
                 }
-                items.push_back(std::string("Wearable And Object Wear"));
+                else {
+                    items.push_back(std::string("Wearable And Object Wear"));  
+                }                
                 disabled_items.push_back(std::string("Take Off"));
             }
 

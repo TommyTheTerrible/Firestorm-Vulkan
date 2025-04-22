@@ -838,7 +838,7 @@ void hide_context_entries(LLMenuGL& menu,
                 // These should stay enabled unless specifically disabled
                 const menuentry_vec_t exceptions = {
                     "Detach From Yourself",
-                    "Wearable And Object Wear",
+                 //   "Wearable And Object Wear", // <TS:3T> We do not want this on all the time.
                     "Wearable Add",
                 };
 
@@ -7680,7 +7680,8 @@ void LLObjectBridge::openItem()
     performAction(getInventoryModel(),
               // <FS> Double-click add/replace
               //get_is_item_worn(mUUID) ? "detach" : "attach");
-              get_is_item_worn(mUUID) ? "detach" : gSavedSettings.getBOOL("FSDoubleClickAddInventoryObjects") ? "wear_add" : "attach");
+              //get_is_item_worn(mUUID) ? "detach" : gSavedSettings.getBOOL("FSDoubleClickAddInventoryObjects") ? "wear_add" : "attach");
+              get_is_item_worn(mUUID) ? "detach" : "wear_add");
 }
 
 std::string LLObjectBridge::getLabelSuffix() const
@@ -7877,7 +7878,7 @@ void LLObjectBridge::buildContextMenu(LLMenuGL& menu, U32 flags)
             else if (!isItemInTrash() && !isLinkedObjectInTrash() && !isLinkedObjectMissing() && !isCOFFolder())
             {
                 items.push_back(std::string("Wearable And Object Separator"));
-                items.push_back(std::string("Wearable And Object Wear"));
+                //items.push_back(std::string("Wearable And Object Wear"));
                 items.push_back(std::string("Wearable Add"));
                 items.push_back(std::string("Attach To"));
                 items.push_back(std::string("Attach To HUD"));
@@ -7902,6 +7903,16 @@ void LLObjectBridge::buildContextMenu(LLMenuGL& menu, U32 flags)
                         disabled_items.push_back(std::string("Wearable Add"));
                 }
 // [/RLVa:KB]
+                else if (item->getType() == LLAssetType::AT_OBJECT)
+                {
+                    disabled_items.push_back(std::string("Wearable And Object Wear"));
+                }
+                else
+                {
+                    items.push_back(std::string("Wearable And Object Wear"));
+                }
+
+                LL_WARNS() << "Menu: " << item->getUUID() << " type: " << (S32)item->getType() << LL_ENDL;
 
                 LLMenuGL* attach_menu = menu.findChildMenuByName("Attach To", true);
                 LLMenuGL* attach_hud_menu = menu.findChildMenuByName("Attach To HUD", true);
@@ -8198,6 +8209,44 @@ void LLWearableBridge::buildContextMenu(LLMenuGL& menu, U32 flags)
                                 disabled_items.push_back(std::string("Wearable Add"));
                         }
 // [/RLVa:KB]
+                    }
+
+                    if (LLWearableType::getInstance()->getAllowMultiwear(mWearableType))
+                    {
+                        items.push_back(std::string("Wearable Add"));
+                        if (!gAgentWearables.canAddWearable(mWearableType))
+                        {
+                            disabled_items.push_back(std::string("Wearable Add"));
+                        }
+                    }
+                    break;
+                case LLAssetType::AT_OBJECT:
+                    if (get_is_item_worn(item->getUUID()))
+                    {
+                        disabled_items.push_back(std::string("Wearable And Object Wear"));
+                        disabled_items.push_back(std::string("Wearable Add"));
+                        // [RLVa:KB] - Checked: 2010-04-04 (RLVa-1.2.0c) | Added: RLVa-1.2.0c
+                        if ((rlv_handler_t::isEnabled()) && (!gRlvWearableLocks.canRemove(item)))
+                            disabled_items.push_back(std::string("Take Off"));
+                        // [/RLVa:KB]
+                    }
+                    else
+                    {
+                        disabled_items.push_back(std::string("Wearable And Object Wear"));
+                        //                      items.push_back(std::string("Wearable Add"));
+                        disabled_items.push_back(std::string("Take Off"));
+                        disabled_items.push_back(std::string("Wearable Edit"));
+
+                        // [RLVa:KB] - Checked: 2010-06-09 (RLVa-1.2.0g) | Modified: RLVa-1.2.0g
+                        if (rlv_handler_t::isEnabled())
+                        {
+                            ERlvWearMask eWearMask = gRlvWearableLocks.canWear(item);
+                            if ((eWearMask & RLV_WEAR_REPLACE) == 0)
+                                disabled_items.push_back(std::string("Wearable And Object Wear"));
+                            if ((eWearMask & RLV_WEAR_ADD) == 0)
+                                disabled_items.push_back(std::string("Wearable Add"));
+                        }
+                        // [/RLVa:KB]
                     }
 
                     if (LLWearableType::getInstance()->getAllowMultiwear(mWearableType))
@@ -8877,8 +8926,8 @@ void LLObjectBridgeAction::attachOrDetach()
     else
     {
         // <FS:Ansariel> Double-click add/replace option
-        //LLAppearanceMgr::instance().wearItemOnAvatar(mUUID, true, false); // Don't replace if adding.
-        LLAppearanceMgr::instance().wearItemOnAvatar(mUUID, true, !gSavedSettings.getBOOL("FSDoubleClickAddInventoryObjects")); // Don't replace if adding.
+        LLAppearanceMgr::instance().wearItemOnAvatar(mUUID, true, false); // Don't replace if adding.
+        //LLAppearanceMgr::instance().wearItemOnAvatar(mUUID, true, !gSavedSettings.getBOOL("FSDoubleClickAddInventoryObjects")); // Don't replace if adding.
     }
 }
 

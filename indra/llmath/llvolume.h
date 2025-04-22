@@ -1132,7 +1132,8 @@ private:
 
 public:
     virtual void setMeshAssetLoaded(bool loaded);
-    virtual bool isMeshAssetLoaded() const;
+    virtual bool isMeshAssetLoaded();
+    virtual bool isMeshAssetTextured();
     virtual void setMeshAssetUnavaliable(bool unavaliable);
     virtual bool isMeshAssetUnavaliable() const;
 

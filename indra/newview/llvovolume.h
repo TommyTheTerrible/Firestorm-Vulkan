@@ -431,6 +431,8 @@ protected:
     S32 computeLODDetail(F32 distance, F32 radius, F32 lod_factor);
     bool calcLOD();
     LLFace* addFace(S32 face_index);
+    bool isFaceTextured(S32 f);
+    virtual bool isMeshAssetTextured();
 
     // stats tracking for render complexity
     static S32 mRenderComplexity_last;

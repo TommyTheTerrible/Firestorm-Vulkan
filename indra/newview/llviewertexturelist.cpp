@@ -24,6 +24,9 @@
  * $/LicenseInfo$
  */
 
+#if __has_include(<execution>)
+#include <execution>
+#endif
 #include "llviewerprecompiledheaders.h"
 
 #include <sys/stat.h>
@@ -61,7 +64,8 @@
 #include "llviewerdisplay.h"
 #include "llviewerwindow.h"
 #include "llprogressview.h"
-
+#include "llwindow.h"
+#include "llviewerdisplay.h"
 ////////////////////////////////////////////////////////////////////////////
 
 void (*LLViewerTextureList::sUUIDCallback)(void **, const LLUUID&) = NULL;
@@ -105,7 +109,23 @@ void LLViewerTextureList::init()
 {
     mInitialized = true ;
     sNumImages = 0;
+    mForceDecodeTimer.start();
     doPreloadImages();
+}
+
+S32 LLViewerTextureList::getNumSculpt()
+{
+    S32 count = 0;
+    uuid_map_t::iterator iter(mUUIDMap.begin());
+    while (iter != mUUIDMap.end())
+    {
+        if (iter->second->forSculpt())
+            count++;        
+        ++iter;
+        if (iter == mUUIDMap.end())
+            break;
+    }
+    return count;
 }
 
 
@@ -120,7 +140,7 @@ void LLViewerTextureList::doPreloadImages()
 
     // Set the "missing asset" image
     LLViewerFetchedTexture::sMissingAssetImagep = LLViewerTextureManager::getFetchedTextureFromFile("missing_asset.tga", FTT_LOCAL_FILE, MIPMAP_NO, LLViewerFetchedTexture::BOOST_UI);
-
+    LLViewerFetchedTexture::sDefaultParticleImagep = LLViewerTextureManager::getFetchedTextureFromFile("pixiesmall.j2c");
     // Set the "white" image
     LLViewerFetchedTexture::sWhiteImagep = LLViewerTextureManager::getFetchedTextureFromFile("white.tga", FTT_LOCAL_FILE, MIPMAP_NO, LLViewerFetchedTexture::BOOST_UI);
     LLTexUnit::sWhiteTexture = LLViewerFetchedTexture::sWhiteImagep->getTexName();
@@ -722,11 +742,11 @@ LLViewerFetchedTexture* LLViewerTextureList::createImage(const LLUUID &image_id,
     }
 
     // <FS:Ansariel> Keep Fast Cache option
-    if(fast_cache_fetching_enabled)
-    {
-        mFastCacheList.insert(imagep);
-        imagep->setInFastCacheList(true);
-    }
+    //if(fast_cache_fetching_enabled)
+    //{
+    //    mFastCacheList.insert(imagep);
+    //    imagep->setInFastCacheList(true);
+    //}
     // </FS:Ansariel>
     return imagep ;
 }
@@ -872,18 +892,18 @@ void LLViewerTextureList::deleteImage(LLViewerFetchedTexture *image)
 void LLViewerTextureList::updateImages(F32 max_time)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_TEXTURE;
-    static bool cleared = false;
+    //static BOOL cleared = FALSE;
     if(gTeleportDisplay)
     {
-        if(!cleared)
-        {
+        //if(!cleared)
+        //{
             clearFetchingRequests();
             gPipeline.clearRebuildGroups();
-            cleared = true;
-        }
+            //cleared = TRUE;
+        //}
         return;
     }
-    cleared = false;
+    //cleared = FALSE;
 
     LLAppViewer::getTextureFetch()->setTextureBandwidth((F32)LLTrace::get_frame_recording().getPeriodMeanPerSec(LLStatViewer::TEXTURE_NETWORK_DATA_RECEIVED).value());
 
@@ -895,18 +915,25 @@ void LLViewerTextureList::updateImages(F32 max_time)
     }
 
     // make sure each call below gets at least its "fair share" of time
-    F32 min_time = max_time * 0.33f;
+    F32 min_time = max_time * 0.33f; // <TS:3T> Three processes sharing max_time
     F32 remaining_time = max_time;
 
-    //loading from fast cache
-    remaining_time -= updateImagesLoadingFastCache(remaining_time);
-    remaining_time = llmax(remaining_time, min_time);
+    //load boosted images
+    //remaining_time -= updateBoostImagesFetchTextures(remaining_time);
+    //remaining_time = llmax(remaining_time, min_time);
 
     //dispatch to texture fetch threads
     remaining_time -= updateImagesFetchTextures(remaining_time);
     remaining_time = llmax(remaining_time, min_time);
 
     //handle results from decode threads
+    postProcessImages(remaining_time);
+}
+
+void LLViewerTextureList::postProcessImages(F32 max_time)
+{
+    F32 remaining_time = max_time;
+    // handle results from decode threads
     updateImagesCreateTextures(remaining_time);
 
     bool didone = false;
@@ -950,248 +977,103 @@ void LLViewerTextureList::clearFetchingRequests()
 
 extern bool gCubeSnapshot;
 
-void LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture* imagep, bool flush_images)
+bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imagep, bool check_faces)
 {
+
     llassert(!gCubeSnapshot);
 
-    if (imagep->getBoostLevel() < LLViewerFetchedTexture::BOOST_HIGH)  // don't bother checking face list for boosted textures
+    bool needs_fetch = false;
+    float assign_size = 0;
+    float assign_importance = 0;  // Importance should always be zero or greater.
+    float assign_boost = 0;
+    S32 for_anim = 0;
+    S32 for_hud = 0;
+    S32 for_particle = 0;
+    U32 num_faces = 0;
+    U32 max_faces_to_check = 64;
+
+    LL_PROFILE_ZONE_SCOPED_CATEGORY_TEXTURE
     {
-        static LLCachedControl<F32> texture_scale_min(gSavedSettings, "TextureScaleMinAreaFactor", 0.04f);
-        static LLCachedControl<F32> texture_scale_max(gSavedSettings, "TextureScaleMaxAreaFactor", 25.f);
-
-        F32 max_vsize = 0.f;
-        bool on_screen = false;
-
-        U32 face_count = 0;
-
-        // get adjusted bias based on image resolution
-        F32 max_discard = F32(imagep->getMaxDiscardLevel());
-        F32 bias = llclamp(max_discard - 2.f, 1.f, LLViewerTexture::sDesiredDiscardBias);
-
-        // convert bias into a vsize scaler
-        // <FS:minerjr> [FIRE-35081] Blurry prims not changing with graphics settings, not happening with SL Viewer
-        //bias = (F32) llroundf(powf(4, bias - 1.f));
-        // Pre-divide the bias so you can just use multiply in the loop
-        bias = (F32) 1.0f / llroundf(powf(4, bias - 1.f));
-
-        // Apply new rules to bias discard, there are now 2 bias, off-screen and on-screen.
-        // On-screen Bias
-        // Only applied to LOD Textures and one that have Discard > 1 (0, 1 protected)
-        // 
-        // Off-screen Bias
-        // Will be using the old method of applying the mMaxVirtualSize, however
-        // only on LOD textures and fetched textures get bias applied.
-        // 
-        // Local (UI & Icons), Media and Dynamic textures should not have any discard applied to them.
-        // 
-        // Without this, textures will become blurry that are on screen, which is one of the #1
-        // user complaints.
-
-        // Store a seperate max on screen vsize without bias applied.
-        F32 max_on_screen_vsize = 0.0f;
-        S32 on_screen_count = 0;
-        // Moved all the variables outside of the loop
-        bool current_on_screen = false;
-        F32 vsize = 0.0f; // Moved outside the loop to save reallocation every loop
-        F32 important_to_camera = 0.0f;
-        F32 close_to_camera = 0.0f; // Track if the texture is close to the cameras
-        F64 animated = 0; // U64 used to track if a pointer is set for the animations. (The texture matrix of the face is null if no animation assigned to the texture)
-                           // So if you keep adding and the final result is 0, there is no animation
-        // </FS:minerjr> [FIRE-35081]
-        // boost resolution of textures that are important to the camera
-        // Can instead of using max for a min of 1.0, just subtract 1 from the boost and just do a 1 + (TextureCameraBoost - 1) * importanceToCamera)
-        static LLCachedControl<F32> texture_camera_boost(gSavedSettings, "TextureCameraBoost", 7.f);
-        LL_PROFILE_ZONE_SCOPED_CATEGORY_TEXTURE;
-        for (U32 i = 0; i < LLRender::NUM_TEXTURE_CHANNELS; ++i)
+        for (U32 i = 0; i < LLRender::NUM_TEXTURE_CHANNELS; i++)
         {
-            for (S32 fi = 0; fi < imagep->getNumFaces(i); ++fi)
+            num_faces += imagep->getNumFaces(i);
+            if (!check_faces || num_faces == 0 || num_faces > max_faces_to_check)
+                continue;
+            for (S32 fi = 0; fi < imagep->getNumFaces(i); )
             {
-                LLFace* face = (*(imagep->getFaceList(i)))[fi];
-
-                if (face && face->getViewerObject())
+                LLFace *face       = (*(imagep->getFaceList(i)))[fi++];
+                float   vsize      =  0; // some faces do not have texture entries early, but we still need to allow the texture to be fetched
+                float   importance =  0;                
+                bool    calculate  = (face && face->getTextureEntry() && face->getDrawable()); // pre-calculate bool to help branch predictions
+                if (calculate)
                 {
-                    ++face_count;
-                    // <FS:minerjr> [FIRE-35081] Blurry prims not changing with graphics settings, not happening with SL Viewer
-                    // No longer needed as we no longer re-calculate the face's virtual texture size, we use it directly from the face
-                    //F32 radius;
-                    //F32 cos_angle_to_view_dir;
-                    // </FS:minerjr> [FIRE-35081]
-
-                    if ((gFrameCount - face->mLastTextureUpdate) > 10)
-                    { // only call calcPixelArea at most once every 10 frames for a given face
-                        // this helps eliminate redundant calls to calcPixelArea for faces that have multiple textures
-                        // assigned to them, such as is the case with GLTF materials or Blinn-Phong materials
-
-                        //face->calcPixelArea(cos_angle_to_view_dir, radius);
-                        // The face already has a function to calculate the Texture Virtual Size, which already calls the calcPixelArea method
-                        // so just call this instead. This can be called from outside this loop by LLVolume objects
-                        face->getTextureVirtualSize();
-                        face->mLastTextureUpdate = gFrameCount;
-                    }
-                                        
-                    // Also moved allocation outside the loop
-                    // <FS:minerjr> [FIRE-35081] Blurry prims not changing with graphics settings, not happening with SL Viewer
-                    //F32 vsize = face->getPixelArea();
-                    // Get the already calculated face's virtual size, instead of re-calculating it
-                    vsize = face->getVirtualSize();
-                    
-                    current_on_screen = face->mInFrustum; // Create a new var to store the current on screen status                    
-                    on_screen_count += current_on_screen; // Count the number of on sceen faces instead of using brach
-                    important_to_camera = face->mImportanceToCamera; // Store so we don't have to do 2 indirects later on
-                    // If the face/texture is animated, then set the boost level to high, so that it will ways be the best quality
-                    animated += S64(face->mTextureMatrix);
-                    animated += S64(face->hasMedia()); // Add has media for both local and parcel media
-                    animated += S64(imagep->hasParcelMedia());
-
-                    // <FS:minerjr> [FIRE-35081] Blurry prims not changing with graphics settings, not happening with SL Viewer (It is)
-                    /*
-                    // Scale desired texture resolution higher or lower depending on texture scale
-                    //
-                    // Minimum usage examples: a 1024x1024 texture with aplhabet, runing string
-                    // shows one letter at a time
-                    //
-                    // Maximum usage examples: huge chunk of terrain repeats texture
-                    // TODO: make this work with the GLTF texture transforms
-                    
-                    S32 te_offset = face->getTEOffset();  // offset is -1 if not inited
-                    LLViewerObject* objp = face->getViewerObject();
-                    const LLTextureEntry* te = (te_offset < 0 || te_offset >= objp->getNumTEs()) ? nullptr : objp->getTE(te_offset);
-                    F32 min_scale = te ? llmin(fabsf(te->getScaleS()), fabsf(te->getScaleT())) : 1.f;
-                    min_scale = llclamp(min_scale * min_scale, texture_scale_min(), texture_scale_max());
+                    const LLTextureEntry *te = face->getTextureEntry();
+                    face->fastcalcPixelArea();
+                    vsize = face->getPixelArea();
+                    importance = face->getImportanceToCamera();
+                    // Scale pixel area higher or lower depending on texture scale
+                    F32 min_scale = llmin(fabsf(te->getScaleS()), fabsf(te->getScaleT()));
+                    min_scale = llmax(min_scale * min_scale, 0.1f);
                     vsize /= min_scale;
-
-                    // apply bias to offscreen faces all the time, but only to onscreen faces when bias is large
-                    if (!face->mInFrustum || LLViewerTexture::sDesiredDiscardBias > 2.f)
-                    {
-                        vsize /= bias;
-                    }
-
-                    // boost resolution of textures that are important to the camera
-                    if (face->mInFrustum)
-                    {
-                        static LLCachedControl<F32> texture_camera_boost(gSavedSettings, "TextureCameraBoost", 8.f);
-                        vsize *= llmax(face->mImportanceToCamera*texture_camera_boost, 1.f);
-                    }
-
-                    max_vsize = llmax(max_vsize, vsize);
-                    */
-
-                    // Use math to skip having to use a conditaional check
-                    // Bools are stored as 0 false, 1 true, use to cheat
-                    // Lerp instead of doing conditional input
-                    // If the image is import to the camera, even a little then make the on screen true                    
-                    on_screen_count += S32(important_to_camera * 1000.0f);
-                    //vsize = vsize + (vsize * (1.0f + important_to_camera * texture_camera_boost) - vsize) * F32(current_on_screen);
-                    // Apply boost of size based upon importance to camera
-                    vsize = vsize + (vsize * important_to_camera * texture_camera_boost);
-                    // Apply second boost based upon if the texture is close to the camera (< 16.1 meters * draw distance multiplier)
-                    vsize = vsize + (vsize * face->mCloseToCamera * texture_camera_boost);
-                    // Update the max on screen vsize based upon the on screen vsize
-                    close_to_camera += face->mCloseToCamera;
-                    LL_DEBUGS() << face->getViewerObject()->getID() << " TID " << imagep->getID() << " #F " << imagep->getNumFaces(i) << " OS Vsize: " << vsize << " Vsize: " << (vsize * bias) << " CTC: " << face->mCloseToCamera << " Channel " << i << " Face Index " << fi << LL_ENDL;
-                    max_on_screen_vsize = llmax(max_on_screen_vsize, vsize);
-                    max_vsize = llmax(max_vsize, vsize * bias);
-                    // </FS:minerjr> [FIRE-35081]
+                    for_anim += face->isState(LLFace::TEXTURE_ANIM);
+                    for_hud += face->isState(LLFace::HUD_RENDER);
+                    for_particle += face->isState(LLFace::PARTICLE);
                 }
+                assign_size = llmax(assign_size, vsize);
+                assign_importance += importance;
             }
         }
-
-        // <FS:minerjr> [FIRE-35081] Blurry prims not changing with graphics settings, not happening with SL Viewer
-        // Replaced all the checks for this bool to be only in this 1 place instead of in the loop.
-        // If the on screen counter is greater then 0, then there was at least 1 on screen texture
-        on_screen = bool(on_screen_count);
-        imagep->setCloseToCamera(close_to_camera > 0.0f ? 1.0f : 0.0f);
-
-        //if (face_count > 1024)
-        // Add check for if the image is animated to boost to high as well
-        if (face_count > 1024 || animated != 0)
-        // </FS:minerjr> [FIRE-35081]
-        { // this texture is used in so many places we should just boost it and not bother checking its vsize
-            // this is especially important because the above is not time sliced and can hit multiple ms for a single texture
-            imagep->setBoostLevel(LLViewerFetchedTexture::BOOST_HIGH);
-        }
-
-        if (imagep->getType() == LLViewerTexture::LOD_TEXTURE && imagep->getBoostLevel() == LLViewerTexture::BOOST_NONE)
-        { // conditionally reset max virtual size for unboosted LOD_TEXTURES
-          // this is an alternative to decaying mMaxVirtualSize over time
-          // that keeps textures from continously downrezzing and uprezzing in the background
-
-            if (LLViewerTexture::sDesiredDiscardBias > 1.5f ||
-                (!on_screen && LLViewerTexture::sDesiredDiscardBias > 1.f))
-            {
-                imagep->mMaxVirtualSize = 0.f;
-            }
-        }
-
-        // <FS:minerjr> [FIRE-35081] Blurry prims not changing with graphics settings, not happening with SL Viewer
-        //imagep->addTextureStats(max_vsize);
-        // New logic block for the bias system        
-        // Then depending on the type of texture, the higher resolution on_screen_max_vsize is applied.
-        // On Screen (Without Bias applied:
-        //      LOD/Fetch Texture: Discard Levels 0, 1
-        //      Fetch Texture 2, 3, 5 with bias < 2.0
-        //      BoostLevel = Boost_High
-        //      Local, Media, Dynamic Texture        
-        // If the textures are on screen and either 1 are the first 2 levels of discard and are either fetched or LOD textures
-        if (on_screen && ((imagep->getDiscardLevel() < 2 && imagep->getType() >= LLViewerTexture::FETCHED_TEXTURE) || (imagep->getType() == LLViewerTexture::FETCHED_TEXTURE && LLViewerTexture::sDesiredDiscardBias < 2.0f)))
-        {
-            // Always use the best quality of the texture
-            imagep->addTextureStats(max_on_screen_vsize);
-        }
-        // If the boost level just became high, or the texture is (Local, Media Dynamic)
-        else if (imagep->getBoostLevel() >= LLViewerTexture::BOOST_HIGH || imagep->getType() < LLViewerTexture::FETCHED_TEXTURE || close_to_camera)
-        {
-            // Always use the best quality of the texture
-            imagep->addTextureStats(max_on_screen_vsize);
-        }
-        // All other texture cases will use max_vsize with bias applied.
-        else
-        {
-            imagep->addTextureStats(max_vsize);
-        }
-        // </FS:minerjr> [FIRE-35081]
     }
-
-#if 0
-    imagep->setDebugText(llformat("%d/%d - %d/%d -- %d/%d",
-        (S32)sqrtf(max_vsize),
-        (S32)sqrtf(imagep->mMaxVirtualSize),
-        imagep->getDiscardLevel(),
-        imagep->getDesiredDiscardLevel(),
-        imagep->getWidth(),
-        imagep->getFullWidth()));
-#endif
-
-    // make sure to addTextureStats for any spotlights that are using this texture
-    for (S32 vi = 0; vi < imagep->getNumVolumes(LLRender::LIGHT_TEX); ++vi)
+    if (check_faces)
     {
-        LLVOVolume* volume = (*imagep->getVolumeList(LLRender::LIGHT_TEX))[vi];
-        volume->updateSpotLightPriority();
+        bool in_frustum = (assign_importance > 0);
+        // If texture is used for an animation, increase it's size
+        assign_size *= (float) llmax(pow((int)(for_anim > 0 && in_frustum) * 2, 4), 1);
+        // Increase importance if used in an animation in frustum, a HUD or a particle.
+        assign_importance += (float) ((0.6 * (int)(for_anim > 0) * (int) in_frustum) + (1 * (int)(for_hud > 0)) + (1 * (int)(for_particle > 0)));
+        // Increase importance if used for Sculpty mesh
+        assign_importance += (int)imagep->isForSculptOnly();
+        if (imagep->getBoostLevel() > 0 || num_faces > max_faces_to_check)
+            assign_size = MAX_IMAGE_AREA;
+        // Adjust assigned size based on sliding scale of importance and current discard bias.
+        if (for_hud == 0 && assign_importance < (float) llmax(((LLViewerTexture::sDesiredDiscardBias - 1) * 0.20), 0))
+            assign_size /= (float)llmax(pow((LLViewerTexture::sDesiredDiscardBias - 1), 4), 1);
+        // Assign size to image and find out if a fetch is necessary
+        //      from mMaxVirtualSize changing or discard not correct.
+        needs_fetch = (imagep->addTextureStats(assign_size) ||
+            imagep->getDesiredDiscardLevel() != imagep->getDiscardLevel());
+        // Store the importance with the image to use for prioritization later.
+        imagep->setMaxFaceImportance(assign_importance);
+        imagep->processTextureStats();
     }
 
-    F32 max_inactive_time = 20.f; // inactive time before deleting saved raw image
-    S32 min_refs = 3; // 1 for mImageList, 1 for mUUIDMap, and 1 for "entries" in updateImagesFetchTextures
-
-    F32 lazy_flush_timeout = 30.f; // delete unused images after 30 seconds
+    F32 lazy_flush_timeout = 30.f;  // Delete after n seconds, or 0 to not delete until VRAM threshold reached.
+    F32 max_inactive_time  = 30.f;  // Stop making changes to texture after n seconds.
+    S32 min_refs           = 3;     // 1 for mImageList, 1 for mUUIDMap, 1 for local reference
 
     //
     // Flush formatted images using a lazy flush
     //
+    // Reset texture state if found on a face or not.
+    imagep->setInactive(num_faces > 0);
     S32 num_refs = imagep->getNumRefs();
-    if (num_refs <= min_refs && flush_images)
+    if (num_refs <= min_refs)
     {
         if (imagep->getLastReferencedTimer()->getElapsedTimeF32() > lazy_flush_timeout)
         {
             // Remove the unused image from the image list
             deleteImage(imagep);
-            return;
+            imagep = NULL;  // should destroy the image
         }
+        return false;
     }
     else
     {
+        /* <TommyTheTerrible - Removed to only reset when texture is active.>
         // still referenced outside of image list, reset timer
         imagep->getLastReferencedTimer()->reset();
 
+        */
         if (imagep->hasSavedRawImage())
         {
             if (imagep->getElapsedLastReferencedSavedRawImageTime() > max_inactive_time)
@@ -1202,21 +1084,50 @@ void LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture* imag
 
         if (imagep->isDeleted())
         {
-            return;
+            return false;
+        }
+        else if (imagep->isDeletionCandidate() &&
+                    ((lazy_flush_timeout > 0 && imagep->getLastReferencedTimer()->getElapsedTimeF32() > lazy_flush_timeout) ||
+                    LLViewerTexture::sDesiredDiscardBias > 4))
+        {
+            imagep->destroyTexture();
+            return false;
+        }
+        else if (imagep->isInactive())
+        {
+            if (imagep->getLastReferencedTimer()->getElapsedTimeF32() > max_inactive_time)
+            {
+                imagep->setDeletionCandidate();
+            }
+            return false;
+        }
+        else
+        {
+            imagep->getLastReferencedTimer()->reset();
         }
     }
 
     if (!imagep->isInImageList())
     {
-        return;
-    }
-    if (imagep->isInFastCacheList())
-    {
-        return; //wait for loading from the fast cache.
+        return false;
     }
 
-    imagep->processTextureStats();
+    return needs_fetch;
 }
+
+//void LLViewerTextureList::setDebugFetching(LLViewerFetchedTexture* tex, S32 debug_level)
+//{
+//    LL_PROFILE_ZONE_SCOPED_CATEGORY_TEXTURE;
+//    if(!tex->setDebugFetching(debug_level))
+//    {
+//        return;
+//    }
+//
+//    const F32 DEBUG_PRIORITY = 100000.f;
+//    removeImageFromList(tex);
+//    tex->mMaxVirtualSize = DEBUG_PRIORITY;
+//    addImageToList(tex);
+//}
 
 F32 LLViewerTextureList::updateImagesCreateTextures(F32 max_time)
 {
@@ -1312,6 +1223,25 @@ F32 LLViewerTextureList::updateImagesCreateTextures(F32 max_time)
         gPipeline.mDownResMap.flush();
     }
 
+    // do at least 5 and make sure we don't get too far behind even if it violates
+    // the time limit.  Textures pending creation have a copy of their texture data
+    // in system memory, so we don't want to let them pile up.
+    S32 min_count = (S32) mCreateTextureList.size() / 20 + 5;
+
+    while (!mCreateTextureList.empty())
+    {
+        LLViewerFetchedTexture *imagep =  mCreateTextureList.front();
+        llassert(imagep->mCreatePending);
+        imagep->createTexture();
+        imagep->postCreateTexture();
+        imagep->mCreatePending = false;
+        mCreateTextureList.pop();
+
+        if (create_timer.getElapsedTimeF32() > max_time) // <TS:3T> This really holds up texture processing!
+        {
+            break;
+        }
+    }
     return create_timer.getElapsedTimeF32();
 }
 
@@ -1357,6 +1287,73 @@ void LLViewerTextureList::forceImmediateUpdate(LLViewerFetchedTexture* imagep)
 
     return ;
 }
+F32 LLViewerTextureList::updateBoostImagesFetchTextures(F32 max_time)
+{
+    LL_PROFILE_ZONE_SCOPED_CATEGORY_TEXTURE;
+    typedef std::vector<LLPointer<LLViewerFetchedTexture>> entries_list_t;
+    entries_list_t                                         entries;
+
+    // update N textures at beginning of mImageList
+    static const U32 MAX_REGION_TSIZE = gSavedSettings.getU32("RegionTextureSize");
+    const F32 max_region_vsize = (F32)(MAX_REGION_TSIZE * MAX_REGION_TSIZE);
+    static const S32 MIN_UPDATE_COUNT = gSavedSettings.getS32("TextureFetchUpdateMinCount");  // default: 32
+    S32 update_count = (S32)gFPSClamped;
+    update_count = llmax(MIN_UPDATE_COUNT, update_count);
+
+    {
+        LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vtluift - copy");
+
+        // copy entries out of UUID map for updating
+        uuid_map_t::iterator initial_iter = mUUIDMap.upper_bound(mLastBoostUpdateKey);
+        uuid_map_t::iterator iter = initial_iter;
+        while (entries.size() <= update_count)
+        {
+            if (iter == mUUIDMap.end())
+            {
+                iter = mUUIDMap.begin();
+            }
+
+            if (iter->second->getGLTexture() && iter->second->getNumRefs() > 1)
+            {
+                bool boost_terrain = (iter->second->getBoostLevel() == LLGLTexture::LLGLTexture::BOOST_TERRAIN
+                    && iter->second->getMaxVirtualSize() < max_region_vsize);
+                bool in_boost_range = (iter->second->getBoostLevel() > LLGLTexture::BOOST_NONE &&
+                     iter->second->getBoostLevel() <= LLGLTexture::BOOST_MAX_LEVEL);
+                bool boost_range_qualifiers = (iter->second->mBoostLoaded < 1 || (iter->second->forSculpt() ||
+                        iter->second->getDiscardLevel() != iter->second->getDesiredDiscardLevel() ||
+                          iter->second->getDiscardLevel() < 0));
+                if (boost_terrain || (in_boost_range && boost_range_qualifiers))
+                    entries.push_back(iter->second);
+            }
+            ++iter;
+            if (iter == initial_iter)
+                break;
+        }
+    }
+
+    LLTimer timer;
+
+    LLPointer<LLViewerTexture> last_imagep = nullptr;
+    for (auto &imagep : entries)
+    {
+        if (imagep->getFTType() == FTT_SERVER_BAKE || imagep->getBoostLevel() == LLGLTexture::BOOST_TERRAIN)
+            updateImageDecodePriority(imagep);
+        imagep->updateFetch();
+
+        last_imagep = imagep;
+        if (timer.getElapsedTimeF32() > max_time)
+        {
+            break;
+        }
+    }
+
+    if (last_imagep)
+    {
+        mLastBoostUpdateKey = LLTextureKey(last_imagep->getID(), (ETexListType) last_imagep->getTextureListType());
+    }
+
+    return timer.getElapsedTimeF32();
+}
 
 F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
 {
@@ -1366,35 +1363,17 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
     entries_list_t entries;
 
     // update N textures at beginning of mImageList
-    U32 update_count = 0;
     static const S32 MIN_UPDATE_COUNT = gSavedSettings.getS32("TextureFetchUpdateMinCount");       // default: 32
-
-    // NOTE:  a texture may be deleted as a side effect of some of these updates
-    // Deletion rules check ref count, so be careful not to hold any LLPointer references to the textures here other than the one in entries.
-
-    //update MIN_UPDATE_COUNT or 5% of other textures, whichever is greater
-    update_count = llmax((U32) MIN_UPDATE_COUNT, (U32) mUUIDMap.size()/20);
-    if (LLViewerTexture::sDesiredDiscardBias > 1.f
-        && LLViewerTexture::sBiasTexturesUpdated < (U32)mUUIDMap.size())
+    //S32 update_count = (S32)gFPSClamped;
+    //update_count = llmax(MIN_UPDATE_COUNT, update_count);
+    S32 update_count = MIN_UPDATE_COUNT;
     {
-        // We are over memory target. Bias affects discard rates, so update
-        // existing textures agresively to free memory faster.
-        update_count = (S32)(update_count * LLViewerTexture::sDesiredDiscardBias);
-
-        // This isn't particularly precise and can overshoot, but it doesn't need
-        // to be, just making sure it did a full circle and doesn't get stuck updating
-        // at bias = 4 with 4 times the rate permanently.
-        LLViewerTexture::sBiasTexturesUpdated += update_count;
-    }
-    update_count = llmin(update_count, (U32) mUUIDMap.size());
-
-    { // copy entries out of UUID map to avoid iterator invalidation from deletion inside updateImageDecodeProiroty or updateFetch below
         LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vtluift - copy");
 
         // copy entries out of UUID map for updating
-        entries.reserve(update_count);
-        uuid_map_t::iterator iter = mUUIDMap.upper_bound(mLastUpdateKey);
-        while (update_count-- > 0)
+        uuid_map_t::iterator initial_iter = mUUIDMap.upper_bound(mLastUpdateKey);
+        uuid_map_t::iterator iter(initial_iter);
+        while (entries.size() <= update_count)
         {
             if (iter == mUUIDMap.end())
             {
@@ -1407,23 +1386,25 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
             if (iter->second->getGLTexture() && get_element_type(iter->second->getBoostLevel()) == TEX_LIST_STANDARD)
             // </FS:minerjr> [FIRE-35081]
             {
-                entries.push_back(iter->second);
+                if (!iter->second->hasFetcher())
+                    entries.push_back(iter->second);
             }
             ++iter;
+            if (iter == initial_iter)
+                break;
         }
     }
 
     LLTimer timer;
+    LLPointer<LLViewerFetchedTexture> last_imagep;
 
     for (auto& imagep : entries)
     {
-        mLastUpdateKey = LLTextureKey(imagep->getID(), (ETexListType)imagep->getTextureListType());
-
-        if (imagep->getNumRefs() > 1) // make sure this image hasn't been deleted before attempting to update (may happen as a side effect of some other image updating)
-        {
-            updateImageDecodePriority(imagep);
+        bool check_faces = (imagep->getBoostLevel() != LLViewerTexture::BOOST_HIGH);
+        if (updateImageDecodePriority(imagep, check_faces))
             imagep->updateFetch();
-        }
+
+        last_imagep = imagep;
 
         if (timer.getElapsedTimeF32() > max_time)
         {
@@ -1431,6 +1412,16 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
         }
     }
 
+    if (last_imagep)
+    {
+        mLastUpdateKey = LLTextureKey(last_imagep->getID(), (ETexListType)last_imagep->getTextureListType());
+    }
+
+    for (auto pair : mUUIDMap)
+    {
+        if (pair.second->hasFetcher())
+            pair.second->updateFetch();
+    }
     return timer.getElapsedTimeF32();
 }
 
@@ -1455,7 +1446,7 @@ void LLViewerTextureList::decodeAllImages(F32 max_time)
     LLTimer timer;
 
     //loading from fast cache
-    updateImagesLoadingFastCache(max_time);
+    //updateImagesLoadingFastCache(max_time);
 
     // Update texture stats and priorities
     std::vector<LLPointer<LLViewerFetchedTexture> > image_list;

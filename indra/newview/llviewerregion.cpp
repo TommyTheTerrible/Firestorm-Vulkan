@@ -1248,7 +1248,7 @@ void LLViewerRegion::killCacheEntry(LLVOCacheEntry* entry, bool for_rendering)
         }
     }
     // Kill the assocaited overrides
-    mImpl->mGLTFOverridesLLSD.erase(entry->getLocalID());
+    //mImpl->mGLTFOverridesLLSD.erase(entry->getLocalID()); <TS:3T/> Disabled until GTLF more reliable.
     //will remove it from the object cache, real deletion
     entry->setState(LLVOCacheEntry::INACTIVE);
     entry->removeOctreeEntry();

@@ -207,6 +207,9 @@ public:
     void        markPartitionMove(LLDrawable* drawablep);
     void        markMeshDirty(LLSpatialGroup* group);
 
+    std::queue<LLPointer<LLDrawable>>       mMarkedDrawables;
+    std::queue<LLPointer<LLViewerTexture>>  mMarkedTextures;
+
     //get the object between start and end that's closest to start.
     LLViewerObject* lineSegmentIntersectInWorld(const LLVector4a& start, const LLVector4a& end,
                                                 bool pick_transparent,
@@ -268,6 +271,9 @@ public:
     void createObjects(F32 max_dtime);
     void createObject(LLViewerObject* vobj);
     void processPartitionQ();
+    void processDrawable(LLDrawable* drawable);
+    void processMarkedDrawables(F32 max_dtime);
+    void processMarkedTextures(F32 max_dtime);
     void updateGeom(F32 max_dtime);
     void updateGL();
     void rebuildPriorityGroups();

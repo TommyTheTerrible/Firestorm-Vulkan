@@ -5254,7 +5254,8 @@ void LLViewerObject::updateAvatarMeshVisibility(const LLUUID& id, const LLUUID& 
     LLVOAvatar* avatar = getAvatar();
     if (avatar)
     {
-        avatar->updateMeshVisibility();
+        if (avatar->getRezzedStatus() == 3)
+            avatar->updateMeshVisibility();
     }
 }
 
@@ -5329,7 +5330,7 @@ void LLViewerObject::updateTEMaterialTextures(U8 te)
             else
             {
                 img = LLViewerTextureManager::getFetchedTexture(id, FTT_DEFAULT, true, LLGLTexture::BOOST_NONE, LLViewerTexture::LOD_TEXTURE);
-                img->addTextureStats(64.f * 64.f, true);
+                img->addTextureStats(64.f * 64.f);
             }
         }
 
@@ -6265,7 +6266,7 @@ void LLViewerObject::setParticleSource(const LLPartSysData& particle_parameters,
             LLViewerTexture* image;
             if (mPartSourcep->mPartSysData.mPartImageID == LLUUID::null)
             {
-                image = LLViewerTextureManager::getFetchedTextureFromFile("pixiesmall.j2c");
+                image = LLViewerFetchedTexture::sDefaultParticleImagep;
             }
             else
             {

@@ -323,7 +323,8 @@ class ViewerManifest(LLManifest,FSViewerManifest):
         global CHANNEL_VENDOR_BASE
         # a standard map of strings for replacing in the templates
         #<FS:TS> tag "OS" after CHANNEL_VENDOR_BASE and before any suffix
-        channel_base = "Phoenix-" + CHANNEL_VENDOR_BASE
+        #channel_base = "Phoenix-" + CHANNEL_VENDOR_BASE
+        channel_base = CHANNEL_VENDOR_BASE
         if self.fs_is_opensim():
             channel_base = channel_base + "OS"
         #</FS:TS>
@@ -741,6 +742,11 @@ class Windows_x86_64_Manifest(ViewerManifest):
             #self.path('apr-1.pdb', 'libarp.pdb')
             #self.path('aprutil-1.pdb', 'libaprutil.pdb')
             # </FS:ND>
+        # Mesa Zink
+        with self.prefix(src=os.path.join(pkgdir, 'bin', 'release')):
+            self.path("libgallium_wgl.dll")
+            self.path("opengl32.dll")
+            self.path("libglapi.dll")
 
         self.path(src="licenses-win32.txt", dst="licenses.txt")
         self.path("featuretable.txt")

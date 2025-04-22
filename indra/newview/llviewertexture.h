@@ -141,7 +141,7 @@ public:
     void setTextureListType(S32 tex_type) { mTextureListType = tex_type; }
     S32 getTextureListType() { return mTextureListType; }
 
-    void addTextureStats(F32 virtual_size, bool needs_gltexture = true) const;
+    bool addTextureStats(F32 virtual_size) const;
     void resetTextureStats();
     void setMaxVirtualSizeResetInterval(S32 interval)const {mMaxVirtualSizeResetInterval = interval;}
     void resetMaxVirtualSizeResetCounter()const {mMaxVirtualSizeResetCounter = mMaxVirtualSizeResetInterval;}
@@ -233,6 +233,7 @@ public:
     static F32  sCurrentTime ;
     static LLUUID sInvisiprimTexture1 ;
     static LLUUID sInvisiprimTexture2 ;
+    U32 mBoostLoaded;
 
     // estimated free memory for textures, by bias calculation
     static F32 sFreeVRAMMegabytes;
@@ -364,6 +365,8 @@ public:
     void updateVirtualSize() ;
 
     S32  getDesiredDiscardLevel()            { return mDesiredDiscardLevel; }
+    S32  getRequestedDiscardLevel()          { return mRequestedDiscardLevel; }
+    S32  getLastFetchState()                 { return mLastFetchState; }
     void setMinDiscardLevel(S32 discard)    { mMinDesiredDiscardLevel = llmin(mMinDesiredDiscardLevel,(S8)discard); }
 
     void setBoostLevel(S32 level) override;
@@ -402,11 +405,20 @@ public:
     const std::string& getUrl() const {return mUrl;}
     //---------------
     bool isDeleted() ;
+    bool isInactive() ;
+    bool isDeletionCandidate();
+    bool isActive();
+    void setDeletionCandidate() ;
+    void setInactive(bool found) ;
     bool getUseDiscard() const { return mUseMipMaps && !mDontDiscard; }
     //---------------
 
     void setForSculpt();
+    void setForHUD() { mForHUD = true; }
+    void setForParticle() { mForParticle = true; }
     bool forSculpt() const {return mForSculpt;}
+    bool forHUD() const { return mForHUD; }
+    bool forParticle() const { return mForParticle; }
     bool isForSculptOnly() const;
 
     //raw image management
@@ -427,6 +439,7 @@ public:
     bool        hasSavedRawImage() const ;
     F32         getElapsedLastReferencedSavedRawImageTime() const ;
     bool        isFullyLoaded() const;
+    bool        isBoostLoaded() { return mBoostLoaded; };
 
     bool        hasFetcher() const { return mHasFetcher;}
     bool        isFetching() const { return mIsFetching;}
@@ -441,6 +454,9 @@ public:
     F32         getCloseToCamera() const {return mCloseToCamera ;} // Get close to camera value
     void        setCloseToCamera(F32 value) {mCloseToCamera = value ;} // Set the close to camera value (0.0f or 1.0f)
     // </FS:minerjr> [FIRE-35081]
+
+    void        setMaxFaceImportance(F32 priority) { mMaxFaceImportance = priority; }
+    F32         getMaxFaceImportance() { return mMaxFaceImportance; }
 
     /*virtual*/bool  isActiveFetching() override; //is actively in fetching by the fetching pipeline.
 
@@ -485,7 +501,7 @@ protected:
     S32 mRequestedDiscardLevel;
     F32 mRequestedDownloadPriority;
     S32 mFetchState;
-    S32 mLastFetchState = -1; // DEBUG
+    S32 mLastFetchState = -2; // DEBUG <TS:3T> Adjust to -2 because fetch_request can respond with -1.
     U32 mFetchPriority;
     F32 mDownloadProgress;
     F32 mFetchDeltaTime;
@@ -493,6 +509,8 @@ protected:
     S32 mMinDiscardLevel;
     S8  mDesiredDiscardLevel;           // The discard level we'd LIKE to have - if we have it and there's space
     S8  mMinDesiredDiscardLevel;    // The minimum discard level we'd like to have
+
+    F32 mMaxFaceImportance; // Keep track of highest importance from faces for textures.
 
     bool mNeedsAux;                 // We need to decode the auxiliary channels
     bool mHasAux;                    // We have aux channels
@@ -511,6 +529,7 @@ protected:
     bool            mPauseLoadedCallBacks;
     callback_list_t mLoadedCallbackList;
     F32             mLastCallBackActiveTime;
+    S32             mLastUpdateFrame;
 
     LLPointer<LLImageRaw> mRawImage;
     S32 mRawDiscardLevel = -1;
@@ -545,8 +564,11 @@ protected:
     // <FS:minerjr> [FIRE-35081] Blurry prims not changing with graphics settings, not happening with SL Viewer
     F32    mCloseToCamera; // Float (0.0f or 1.0f) to indicate if the texture is close to the camera
     // </FS:minerjr> [FIRE-35081]
+    bool   mForHUD ;     // a flag if the texture is used on a HUD
+    bool   mForParticle ;  // a flag if the texture is used as a particle
 
 public:
+    LLTimer mLastTimeUpdated;
     static F32 sMaxVirtualSize; //maximum possible value of mMaxVirtualSize
     static LLPointer<LLViewerFetchedTexture> sMissingAssetImagep;   // Texture to show for an image asset that is not in the database
     static LLPointer<LLViewerFetchedTexture> sWhiteImagep;  // Texture to show NOTHING (whiteness)

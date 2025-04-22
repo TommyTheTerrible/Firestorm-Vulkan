@@ -5072,7 +5072,8 @@ bool LLAppViewer::initCache()
 
     const U32 MB = 1024 * 1024;
     constexpr U32 GB = 1024 * MB; // <FS:Beq/> Readability constant
-    const uintmax_t MIN_CACHE_SIZE = 256 * MB;
+    //const uintmax_t MIN_CACHE_SIZE = 256 * MB;
+    const uintmax_t MIN_CACHE_SIZE = 4ULL * GB; // <TS:3T/> Raise minimum to 4 GBs from 256MBs
     const uintmax_t MAX_CACHE_SIZE = 100ULL * GB; // <FS:Beq/> raise the cap to 100GB, UI will limit to a more sensible level of 20GB.
     const uintmax_t setting_cache_total_size = uintmax_t(gSavedSettings.getU32("CacheSize")) * MB;
     const uintmax_t cache_total_size = llclamp(setting_cache_total_size, MIN_CACHE_SIZE, MAX_CACHE_SIZE);
@@ -5086,7 +5087,8 @@ bool LLAppViewer::initCache()
     // <FS:Ansariel> Better cache size control
     //const uintmax_t disk_cache_size = uintmax_t(cache_total_size * disk_cache_percent / 100);
     const unsigned int disk_cache_mb = gSavedSettings.getU32("FSDiskCacheSize");
-    const uintmax_t disk_cache_size = disk_cache_mb * 1024ULL * 1024ULL;
+    const uintmax_t disk_cache_b = disk_cache_mb * 1024ULL * 1024ULL;
+    const uintmax_t disk_cache_size = llclamp(disk_cache_b, MIN_CACHE_SIZE, MAX_CACHE_SIZE);
     // </FS:Ansariel>
     const bool enable_cache_debug_info = gSavedSettings.getBOOL("EnableDiskCacheDebugInfo");
 
@@ -5656,6 +5658,9 @@ void LLAppViewer::idle()
             // Handle automatic walking towards points
             gAgentPilot.updateTarget();
             gAgent.autoPilot(&yaw);
+
+            //BD - Animator
+            gDragonAnimator.update();
         }
 
         send_agent_update(false);

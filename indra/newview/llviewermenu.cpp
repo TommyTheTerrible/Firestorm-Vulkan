@@ -181,6 +181,8 @@
 #include "llvovolume.h"
 #include "particleeditor.h"
 #include "permissionstracker.h"
+#include "fsareasearch.h"
+#include "llavatarnamecache.h"
 
 using namespace LLAvatarAppearanceDefines;
 
@@ -3234,10 +3236,25 @@ void derenderObject(bool permanent)
             std::string region_name;
             LLAssetType::EType asset_type;
 
-            if (objp->isAvatar())
+            if (objp->isAvatar() || objp->isAttachment()) //<TS:3T> Derender avatar instead of attachment to avoid creepy people disrobing others.
             {
-                LLNameValue* firstname = objp->getNVPair("FirstName");
-                LLNameValue* lastname = objp->getNVPair("LastName");
+                LLNameValue *firstname = objp->getNVPair("FirstName");
+                LLNameValue *lastname = objp->getNVPair("LastName");
+                if (objp->isAttachment()) // <TS:3T> Find the avatar parent to the attachment and use it to derender instead.
+                {
+                    LLViewerObject *parent = (LLViewerObject *) objp->getParent();
+                    while (parent && parent->isAttachment())
+                    {
+                        parent = (LLViewerObject *) parent->getParent();
+                    }
+                    if (parent && parent->isAvatar())
+                    {
+                        id = parent->getID();
+                        firstname = parent->getNVPair("FirstName");
+                        lastname = parent->getNVPair("LastName");
+                        objp = parent;
+                    }
+                }
                 entry_name = llformat("%s %s", firstname->getString(), lastname->getString());
                 asset_type = LLAssetType::AT_PERSON;
             }
@@ -3513,6 +3530,128 @@ class LLAvatarTexRefresh : public view_listener_t
     }
 };
 // </FS:Zi> Texture Refresh
+
+void find_object_search(U8 type)
+{
+    // Types: 0 = Owner, 1 = Creator, 2 = Attachments, 3 = By Name
+    LLUUID owner_id;
+    bool is_group = false;
+    LLSelectMgr::getInstance()->getSelection()->getFirstRootNode()->mPermissions->getOwnership(owner_id, is_group);
+    std::string object_name = LLSelectMgr::getInstance()->getSelection()->getFirstRootNode()->mName;
+    LLUUID creator_id = LLSelectMgr::getInstance()->getSelection()->getFirstRootNode()->mPermissions->getCreator();
+    if (!owner_id.isNull() && !is_group)
+    {
+        LLAvatarName av_name;
+        if (type == 1)  // Type 1 wants Creator
+            LLAvatarNameCache::get(creator_id, &av_name);
+        else
+            LLAvatarNameCache::get(owner_id, &av_name);
+        LLFloaterReg::showInstance("area_search");
+        FSAreaSearch *area_search = LLFloaterReg::findTypedInstance<FSAreaSearch>("area_search");
+        if (av_name.isValidName() && area_search)
+        {
+            area_search->clear();
+            if (type == 2) // Type 2 = Attachments
+            {
+                LLCheckBoxCtrl *exclude_attachment = area_search->getChild<LLCheckBoxCtrl>("exclude_attachment");
+                exclude_attachment->set(FALSE);
+                area_search->setExcludeAttachment(FALSE);
+                LLCheckBoxCtrl *exclude_temporary = area_search->getChild<LLCheckBoxCtrl>("exclude_temporary");
+                exclude_temporary->set(FALSE);
+                area_search->setExcludetemporary(FALSE);
+                LLCheckBoxCtrl *filter_attachment = area_search->getChild<LLCheckBoxCtrl>("filter_attachment");
+                filter_attachment->setEnabled(TRUE);
+                filter_attachment->set(TRUE);
+                area_search->setFilterAttachment(TRUE);
+            }
+            std::string avatar_search_name = av_name.getCompleteName();
+            if (type == 3) // Type 3 = Search by Name
+                area_search->setFindNameText(object_name);
+            else if (type == 1) // Type 1 = Creator search
+                area_search->setFindCreatorText(avatar_search_name);
+            else
+                area_search->setFindOwnerText(avatar_search_name);
+            area_search->onButtonClickedSearch();
+            area_search->checkRegion();
+        }
+    }    
+}
+
+class TSFindObjectOwner : public view_listener_t
+{
+    bool handleEvent(const LLSD &userdata)
+    {
+        find_object_search(0);  // Type 0 = Owner
+        return true;
+    }
+};
+
+class TSFindObjectCreator : public view_listener_t
+{
+    bool handleEvent(const LLSD &userdata)
+    {
+        find_object_search(1);  // Type 1 = Creator
+        return true;
+    }
+};
+
+class TSFindObjectAttachments : public view_listener_t
+{
+    bool handleEvent(const LLSD &userdata)
+    {
+        find_object_search(2);  // Type 2 = Owner Attachments
+        return true;
+    }
+};
+
+class TSFindObjectName : public view_listener_t
+{
+    bool handleEvent(const LLSD &userdata)
+    {
+        find_object_search(3);  // Type 3 = Object Name
+        return true;
+    }
+};
+
+void inspect_avatar(LLVOAvatar *avatar) {
+
+    LLFloaterReg::showInstance("area_search");
+    FSAreaSearch* area_search = LLFloaterReg::findTypedInstance<FSAreaSearch>("area_search");
+    if (area_search && avatar)
+    {
+        LLAvatarName av_name;
+        LLAvatarNameCache::get(avatar->mID, &av_name);
+        area_search->clear();
+        LLCheckBoxCtrl *exclude_attachment = area_search->getChild<LLCheckBoxCtrl>("exclude_attachment");
+        exclude_attachment->set(FALSE);
+        area_search->setExcludeAttachment(FALSE);
+        LLCheckBoxCtrl *exclude_temporary = area_search->getChild<LLCheckBoxCtrl>("exclude_temporary");
+        exclude_temporary->set(FALSE);
+        area_search->setExcludetemporary(FALSE);
+        LLCheckBoxCtrl *filter_attachment = area_search->getChild<LLCheckBoxCtrl>("filter_attachment");
+        filter_attachment->setEnabled(TRUE);
+        filter_attachment->set(TRUE);
+        area_search->setFilterAttachment(TRUE);
+        std::string avatar_search_name = av_name.getCompleteName();
+        area_search->setFindOwnerText(avatar_search_name);
+        area_search->onButtonClickedSearch();
+        area_search->checkRegion();
+    }
+}
+
+class TSAvatarInspect : public view_listener_t
+{
+    bool handleEvent(const LLSD &userdata)
+    {
+        LLVOAvatar *avatar = find_avatar_from_object(LLSelectMgr::getInstance()->getSelection()->getPrimaryObject());
+        if (avatar)
+        {
+            inspect_avatar(avatar);
+        }
+
+        return true;
+    }
+};
 
 class LLObjectReportAbuse : public view_listener_t
 {
@@ -12860,7 +12999,7 @@ void initialize_menus()
 // [/RLVa:KB]
     view_listener_t::addMenu(new LLAvatarReportAbuse(), "Avatar.ReportAbuse");
     view_listener_t::addMenu(new LLAvatarTexRefresh(), "Avatar.TexRefresh");    // ## Zi: Texture Refresh
-
+    view_listener_t::addMenu(new TSAvatarInspect(), "Avatar.Inspect");        // <TS:3T> Add Avatar Inspect
     view_listener_t::addMenu(new LLAvatarToggleMyProfile(), "Avatar.ToggleMyProfile");
     view_listener_t::addMenu(new LLAvatarTogglePicks(), "Avatar.TogglePicks");
     view_listener_t::addMenu(new LLAvatarToggleSearch(), "Avatar.ToggleSearch");
@@ -12932,6 +13071,10 @@ void initialize_menus()
     enable.add("Object.EnableScriptInfo", boost::bind(&enable_script_info));    // <FS:CR>
     enable.add("Object.EnableShowOriginal", boost::bind(&enable_object_show_original)); // <FS:Ansariel> Disable if prevented by RLVa
 
+    view_listener_t::addMenu(new TSFindObjectOwner(), "Find.Owner");              // <TS:3T> Add Find Owner
+    view_listener_t::addMenu(new TSFindObjectCreator(), "Find.Creator");          // <TS:3T> Add Find Creator
+    view_listener_t::addMenu(new TSFindObjectAttachments(), "Find.Attachments");  // <TS:3T> Add Find Owner Attachments
+    view_listener_t::addMenu(new TSFindObjectName(), "Find.Name");  // <TS:3T> Add Find By Object Name
 
     // Attachment pie menu
     enable.add("Attachment.Label", boost::bind(&onEnableAttachmentLabel, _1, _2));

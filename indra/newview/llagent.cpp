@@ -4460,12 +4460,23 @@ void LLAgent::processAgentDataUpdate(LLMessageSystem *msg, void **)
         gAgent.mGroupID = active_id;
         msg->getU64(_PREHASH_AgentData, "GroupPowers", gAgent.mGroupPowers);
         msg->getString(_PREHASH_AgentData, _PREHASH_GroupName, gAgent.mGroupName);
+        // Check for group data, if none then request but if cached then check charter for stream.
+        LLGroupMgrGroupData* group_data = LLGroupMgr::getInstance()->getGroupData(active_id);
+        if (!group_data)
+        {
+            LLGroupMgr::getInstance()->sendGroupPropertiesRequest(active_id);
+        } // Check cached charter.
+        else
+        {
+            gAgent.checkGroupStream(group_data->mCharter);
+        }
     }
     else
     {
         gAgent.mGroupID.setNull();
         gAgent.mGroupPowers = 0;
         gAgent.mGroupName.clear();
+        gAgent.checkGroupStream(""); // Reset group stream to empty string.
     }
     // <FS> Restore to world
     if (gAgent.restoreToWorld)
@@ -4677,6 +4688,54 @@ void LLAgent::processControlRelease(LLMessageSystem *msg, void **)
     }
 }
 */
+
+// <TS:3T> Group Stream Features
+void LLAgent::setGroupStream(std::string stream)
+{
+    if (gAgent.mGroupStream != stream)
+    {
+        if (!stream.empty())
+        {
+            gAudiop->startInternetStream(stream);
+        }
+        else if (gAudiop->getInternetStreamURL() == gAgent.mGroupStream)
+        {
+            gAudiop->stopInternetStream();
+        }
+    }
+    gAgent.mGroupStream = stream;
+}
+
+void LLAgent::checkGroupStream(std::string group_charter)
+{
+    std::string string_start = "[";
+    std::string string_end   = "Stream]";
+    size_t      found_start  = 0;
+    size_t      found_end    = 0;
+    std::string stream_url;
+    if (group_charter.size() > 0)
+    {
+        found_end = group_charter.find(string_end);
+        if (found_end != std::string::npos)
+        {
+            found_start = group_charter.rfind(string_start, found_end);
+            if (found_start != std::string::npos)
+            {
+                size_t string_length = (found_end - found_start - 2);
+                if (string_length > 0)
+                {
+                    stream_url = group_charter.substr(found_start + string_start.size(), string_length);
+                    LLStringUtil::trim(stream_url);
+                }
+            }
+        }
+    }
+    else {
+        stream_url = "";
+    }
+    setGroupStream(stream_url);
+}
+//</TS:3T>
 
 bool LLAgent::anyControlGrabbed() const
 {

@@ -387,7 +387,7 @@ bool LLFastTimerView::handleScrollWheel(S32 x, S32 y, S32 clicks)
     return true;
 }
 
-static BlockTimerStatHandle FTM_RENDER_TIMER("Timers");
+static BlockTimerStatHandle FTM_RENDER_TIMER("Fast Timers Chart");
 static const S32 MARGIN = 10;
 
 static std::vector<LLColor4> sTimerColors;

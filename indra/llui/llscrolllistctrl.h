@@ -236,6 +236,9 @@ public:
     void            deleteSingleItem( S32 index );
     void            deleteItems(const LLSD& sd);
     void            deleteSelectedItems();
+    // BD
+    void deleteFlaggedItems();
+
     void            deselectAllItems(bool no_commit_on_change = false); // by default, go ahead and commit on selection change
 
     void            clearHighlightedItems();
@@ -355,8 +358,9 @@ public:
     // </FS:Ansariel> Fix for FS-specific people list (radar)
 
     // support right-click context menus for avatar/group lists
-    enum ContextMenuType { MENU_NONE, MENU_AVATAR, MENU_GROUP };
-    void setContextMenu(const ContextMenuType &menu) { mContextMenuType = menu; }
+    enum ContextMenuType { MENU_NONE, MENU_AVATAR, MENU_GROUP, MENU_EXTERNAL };
+    //void setContextMenu(const ContextMenuType &menu) { mContextMenuType = menu; }
+    void setContextMenu(const ContextMenuType& menu, LLContextMenu* new_menup = nullptr);
     ContextMenuType getContextMenuType() { return mContextMenuType; }
 
     // Overridden from LLView
@@ -512,7 +516,6 @@ private:
     static void     showNameDetails(std::string id, bool is_group);
     static void     copyNameToClipboard(std::string id, bool is_group);
     static void     copySLURLToClipboard(std::string id, bool is_group);
-
 
     S32             mLineHeight;    // the max height of a single line
     S32             mScrollLines;   // how many lines we've scrolled down

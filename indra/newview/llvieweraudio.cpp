@@ -87,6 +87,10 @@ void LLViewerAudio::registerIdleListener()
 
 void LLViewerAudio::startInternetStreamWithAutoFade(const std::string &streamURI)
 {
+    if (!gAudiop->getInternetStreamURL().empty() &&
+        gAudiop->getInternetStreamURL() == gAgent.mGroupStream)  // <TS:3T> No fading when on group stream.
+        return;
+
     LL_DEBUGS("AudioEngine") << "Start with outo fade: " << streamURI << LL_ENDL;
 
     // Old and new stream are identical
@@ -160,6 +164,9 @@ void LLViewerAudio::startInternetStreamWithAutoFade(const std::string &streamURI
 bool LLViewerAudio::onIdleUpdate()
 {
     bool fadeIsFinished = false;
+
+    if (!gAgent.mGroupStream.empty()) // <TS:3T> No fading when on group stream.
+        return false;
 
     // There is a delay in the login sequence between when the parcel information has
     // arrived and the music stream is started and when the audio system is called to set
@@ -315,7 +322,7 @@ F32 LLViewerAudio::getFadeVolume()
 
 void LLViewerAudio::onTeleportStarted()
 {
-    if (gAudiop && !LLViewerAudio::getInstance()->getForcedTeleportFade())
+    if (gAudiop && !LLViewerAudio::getInstance()->getForcedTeleportFade() && gAgent.mGroupStream.empty()) // <TS:3T> Do not fade on teleport if Groupstream active.
     {
         // Even though the music was turned off it was starting up (with autoplay disabled) occasionally
         // after a failed teleport or after an intra-parcel teleport.  Also, the music sometimes was not

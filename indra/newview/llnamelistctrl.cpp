@@ -350,7 +350,6 @@ LLScrollListItem* LLNameListCtrl::addElement(const LLSD& element, EAddPosition p
     return addNameItemRow(item_params, pos);
 }
 
-
 LLScrollListItem* LLNameListCtrl::addNameItemRow(
     const LLNameListCtrl::NameItem& name_item,
     EAddPosition pos,

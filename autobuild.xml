@@ -3217,6 +3217,38 @@ Copyright (c) 2012, 2014, 2015, 2016 nghttp2 contributors</string>
         <key>version</key>
         <string>1.0.9-5e8947c</string>
       </map>
+      <key>mesazink</key>
+      <map>
+        <key>platforms</key>
+        <map>
+          <key>windows64</key>
+          <map>
+            <key>archive</key>
+            <map>
+              <key>hash</key>
+              <string>6ffdb89a60d3e08bfce7dd6bfec3510ff24a39db</string>
+              <key>hash_algorithm</key>
+              <string>sha1</string>
+              <key>url</key>
+              <string>https://github.com/TommyTheTerrible/mesa-dist-win/releases/download/24.2.3/mesazink-24.2.3.tar.bz2</string>
+            </map>
+            <key>name</key>
+            <string>windows64</string>
+          </map>
+        </map>
+        <key>license</key>
+        <string>mesazink</string>
+        <key>license_file</key>
+        <string>LICENSES/mesazink.txt</string>
+        <key>copyright</key>
+        <string>Copyright (C) 1999-2007  Brian Paul   All Rights Reserved.</string>
+        <key>version</key>
+        <string>24.2.3</string>
+        <key>name</key>
+        <string>mesazink</string>
+        <key>description</key>
+        <string>Mesa Zink Gallium driver for Vulkan emission</string>
+      </map>
     </map>
     <key>package_description</key>
     <map>

@@ -103,6 +103,7 @@ public:
     U16             getGeomStart()      const   { return mGeomIndex; }      // index into draw pool
     void            setTextureIndex(U8 index);
     U8              getTextureIndex() const     { return mTextureIndex; }
+    void            markTextures();
     void            setTexture(U32 ch, LLViewerTexture* tex);
     void            setTexture(LLViewerTexture* tex) ;
     void            setDiffuseMap(LLViewerTexture* tex);
@@ -134,7 +135,7 @@ public:
     void            setIndexInTex(U32 ch, S32 index) { llassert(ch < LLRender::NUM_TEXTURE_CHANNELS); mIndexInTex[ch] = index; }
 
     void            setWorldMatrix(const LLMatrix4& mat);
-    const LLTextureEntry* getTextureEntry() const { return mVObjp->getTE(mTEOffset); }
+    const LLTextureEntry* getTextureEntry() const { return (getTEOffset() < 0 || getTEOffset() >= mVObjp->getNumTEs()) ? nullptr : mVObjp->getTE(mTEOffset); }
 
     LLFacePool*     getPool()           const   { return mDrawPoolp; }
     U32             getPoolType()       const   { return mPoolType; }
@@ -259,6 +260,8 @@ public: //aligned members
 private:
     friend class LLViewerTextureList;
     F32         adjustPartialOverlapPixelArea(F32 cos_angle_to_view_dir, F32 radius );
+    void        fastcalcPixelArea();
+    void        fastcalcImportance();
     bool        calcPixelArea(F32& cos_angle_to_view_dir, F32& radius) ;
 public:
     static F32 calcImportanceToCamera(F32 to_view_dir, F32 dist);
@@ -280,6 +283,8 @@ public:
     LLDrawInfo* mDrawInfo;
     LLVOAvatar* mAvatar = nullptr;
     LLMeshSkinInfo* mSkinInfo = nullptr;
+
+    bool        mFirstTextureLoad;
 
     // return mSkinInfo->mHash or 0 if mSkinInfo is null
     U64 getSkinHash();

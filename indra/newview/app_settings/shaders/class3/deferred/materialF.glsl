@@ -284,10 +284,10 @@ float getShadow(vec3 pos, vec3 norm)
     #if (DIFFUSE_ALPHA_MODE == DIFFUSE_ALPHA_MODE_BLEND)
         return sampleDirectionalShadow(pos, norm, vary_texcoord0.xy);
     #else
-        return 1;
+        return 1.0;
     #endif
 #else
-    return 1;
+    return 1.0;
 #endif
 }
 

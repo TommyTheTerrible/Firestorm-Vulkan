@@ -2015,13 +2015,13 @@ void LLViewerParcelMgr::processParcelProperties(LLMessageSystem *msg, void **use
             {
                 // Only update stream if parcel changed (recreated) or music is playing (enabled)
                 static LLCachedControl<bool> already_playing(gSavedSettings, "MediaTentativeAutoPlay", true);
-                if (!agent_parcel_update || already_playing)
+                if (!agent_parcel_update || already_playing || !gAgent.mGroupStream.empty())
                 {
                     LLViewerParcelAskPlay::getInstance()->cancelNotification();
                     std::string music_url_raw = parcel->getMusicURL();
 
                     // Trim off whitespace from front and back
-                    std::string music_url = music_url_raw;
+                    std::string music_url = gAgent.mGroupStream.empty() ? music_url_raw : gAgent.mGroupStream;
                     LLStringUtil::trim(music_url);
 
                     // If there is a new music URL and it's valid, play it.
@@ -2033,7 +2033,8 @@ void LLViewerParcelMgr::processParcelProperties(LLMessageSystem *msg, void **use
                             LLViewerRegion *region = LLWorld::getInstance()->getRegion(msg->getSender());
                             if (region)
                             {
-                                optionallyStartMusic(music_url, parcel->mLocalID, region->getRegionID(), !agent_parcel_update);
+                                if (gAudiop->getInternetStreamURL() != music_url) // <TS:3T> Stops unnecessary fades if new url same as what is playing.
+                                    optionallyStartMusic(music_url, parcel->mLocalID, region->getRegionID(), !agent_parcel_update);
                             }
                         }
                         else
@@ -2044,7 +2045,8 @@ void LLViewerParcelMgr::processParcelProperties(LLMessageSystem *msg, void **use
                             LLViewerAudio::getInstance()->startInternetStreamWithAutoFade(LLStringUtil::null);
                         }
                     }
-                    else if (!gAudiop->getInternetStreamURL().empty())
+                    else if (gAudiop->getInternetStreamURL().empty() &&
+                             gAgent.mGroupStream.empty()) // <TS:3T> Don't stop audio if group stream set.
                     {
                         LL_INFOS("ParcelMgr") << "Stopping parcel music (parcel stream URL is empty)" << LL_ENDL;
                         // null value causes fade out

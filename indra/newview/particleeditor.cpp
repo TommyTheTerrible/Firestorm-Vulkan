@@ -84,7 +84,6 @@ ParticleEditor::ParticleEditor(const LLSD& key)
 
     // I don't really like referencing the particle texture name here, but it's being done
     // like this all over the viewer, so this is apparently how it's meant to be. -Zi
-    mDefaultParticleTexture = LLViewerTextureManager::getFetchedTextureFromFile("pixiesmall.j2c");
 }
 
 ParticleEditor::~ParticleEditor()
@@ -264,7 +263,7 @@ void ParticleEditor::onParameterChange()
 
     if (mTexture->getID() == IMG_DEFAULT || mTexture->getID().isNull())
     {
-        mTexture = mDefaultParticleTexture;
+        mTexture = LLViewerFetchedTexture::sDefaultParticleImagep;
     }
 
     // limit burst rate to 0.01 to avoid internal freeze, script still gets the real value

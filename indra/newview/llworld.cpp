@@ -713,7 +713,7 @@ void LLWorld::removeRegion(const LLHost &host)
     }
 
     from_region_handle(regionp->getHandle(), &x, &y);
-    LL_INFOS() << "Removing region " << x << ":" << y << LL_ENDL;
+    LL_INFOS() << "Removing region " << regionp->getName() << " " << x << ":" << y << LL_ENDL;
 
     mRegionList.remove(regionp);
     mActiveRegionList.remove(regionp);

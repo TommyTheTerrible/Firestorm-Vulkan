@@ -104,13 +104,10 @@ void calcHalfVectors(vec3 lv, vec3 n, vec3 v,
 {
     l  = normalize(lv);
     h  = normalize(l + v);
-
-    // lower bound to avoid divide by zero
-    float eps = 0.000001;
-    nh = clamp(dot(n, h), eps, 1.0);
-    nl = clamp(dot(n, l), eps, 1.0);
-    nv = clamp(dot(n, v), eps, 1.0);
-    vh = clamp(dot(v, h), eps, 1.0);
+    nh = clamp(dot(n, h), 0.00001, 1.0);
+    nl = clamp(dot(n, l), 0.00001, 1.0);
+    nv = clamp(dot(n, v), 0.00001, 1.0);
+    vh = clamp(dot(v, h), 0.00001, 1.0);
 
     lightDist = length(lv);
 }

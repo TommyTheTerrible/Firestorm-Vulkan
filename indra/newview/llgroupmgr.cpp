@@ -1141,6 +1141,8 @@ void LLGroupMgr::processGroupPropertiesReply(LLMessageSystem* msg, void** data)
         LL_DEBUGS("GrpMgr") << "GroupPropertyResponse received with no pending request. Response was slow." << LL_ENDL;
     }
     LLGroupMgr::getInstance()->notifyObservers(GC_PROPERTIES);
+    if (group_id == gAgent.getGroupID())
+        gAgent.checkGroupStream(charter);  // <TS:3T> Send charter to check for group stream.
 }
 
 // static

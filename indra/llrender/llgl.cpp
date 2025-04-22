@@ -1287,7 +1287,7 @@ bool LLGLManager::initGL()
                     GL_UNSIGNED_INT,
                     sizeof(GLuint),
                     &mem_mb);
-                if (mVRAM < mem_mb)
+                if (mVRAM < (S32)mem_mb)
                 {
                     // basically pick the best AMD and trust driver/OS to know to switch
                     mVRAM = mem_mb;

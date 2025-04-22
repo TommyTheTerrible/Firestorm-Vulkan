@@ -1461,7 +1461,7 @@ bool LLMeshRepoThread::fetchMeshSkinInfo(const LLUUID& mesh_id, bool can_retry)
                 bool zero = true;
                 for (S32 i = 0; i < llmin(size, 1024) && zero; ++i)
                 {
-                    zero = buffer[i] == 0;
+                    zero = (buffer[i] == 0);
                 }
 
                 if (!zero)
