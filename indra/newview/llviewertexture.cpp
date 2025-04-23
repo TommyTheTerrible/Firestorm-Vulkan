@@ -553,7 +553,7 @@ void LLViewerTexture::updateClass()
 
     // <FS:Ansariel> Expose max texture VRAM setting
     //F32 budget = max_vram_budget == 0 ? (F32)gGLManager.mVRAM : (F32)max_vram_budget;
-    F32 budget = !max_vram_budget_enabled ? (F32)gGLManager.mVRAM : (F32)max_vram_budget;
+    F32 budget = (max_vram_budget_enabled && max_vram_budget > 0) ? (F32)max_vram_budget : (F32) gGLManager.mVRAM;
 
     // TommyTheTerrible - Start Bias creep upwards at 4/5ths VRAM used.
     F32 target         = llmax((budget * 0.20f), MIN_VRAM_BUDGET);
