@@ -43,7 +43,7 @@ class LLTabContainer;
 /// <summary>
 /// Describes how to load a pose file.
 /// </summary>
-typedef enum E_LoadPoseMethods
+typedef enum class E_LoadPoseMethods
 {
     ROTATIONS               = 1,
     POSITIONS               = 2,
@@ -62,7 +62,7 @@ typedef enum E_LoadPoseMethods
 /// <summary>
 /// Describes the columns of the avatars scroll-list.
 /// </summary>
-typedef enum E_Columns
+typedef enum class E_Columns
 {
     COL_ICON = 0,
     COL_NAME = 1,

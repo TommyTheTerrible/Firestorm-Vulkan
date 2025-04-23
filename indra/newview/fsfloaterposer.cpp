@@ -749,25 +749,25 @@ void FSFloaterPoser::onPoseMenuAction(const LLSD& param)
 
     std::string poseName = item->getColumn(0)->getValue().asString();
 
-    E_LoadPoseMethods loadType = ROT_POS_AND_SCALES; // the default is to load everything
+    E_LoadPoseMethods loadType = E_LoadPoseMethods::ROT_POS_AND_SCALES; // the default is to load everything
     if (loadStyle == "rotation")
-        loadType = ROTATIONS;
+        loadType = E_LoadPoseMethods::ROTATIONS;
     else if (loadStyle == "position")
-        loadType = POSITIONS;
+        loadType = E_LoadPoseMethods::POSITIONS;
     else if (loadStyle == "scale")
-        loadType = SCALES;
+        loadType = E_LoadPoseMethods::SCALES;
     else if (loadStyle == "rot_pos")
-        loadType = ROTATIONS_AND_POSITIONS;
+        loadType = E_LoadPoseMethods::ROTATIONS_AND_POSITIONS;
     else if (loadStyle == "rot_scale")
-        loadType = ROTATIONS_AND_SCALES;
+        loadType = E_LoadPoseMethods::ROTATIONS_AND_SCALES;
     else if (loadStyle == "pos_scale")
-        loadType = POSITIONS_AND_SCALES;
+        loadType = E_LoadPoseMethods::POSITIONS_AND_SCALES;
     else if (loadStyle == "all")
-        loadType = ROT_POS_AND_SCALES;
+        loadType = E_LoadPoseMethods::ROT_POS_AND_SCALES;
     else if (loadStyle == "selective")
-        loadType = SELECTIVE;
+        loadType = E_LoadPoseMethods::SELECTIVE;
     else if (loadStyle == "selective_rot")
-        loadType = SELECTIVE_ROT;
+        loadType = E_LoadPoseMethods::SELECTIVE_ROT;
 
     LLVOAvatar* avatar = getUiSelectedAvatar();
     if (!avatar)
@@ -921,13 +921,15 @@ void FSFloaterPoser::loadPoseFromXml(LLVOAvatar* avatar, const std::string& pose
     std::string fullPath =
         gDirUtilp->getExpandedFilename(LL_PATH_USER_SETTINGS, POSE_SAVE_SUBDIRECTORY, poseFileName + POSE_INTERNAL_FORMAT_FILE_EXT);
 
-    bool loadRotations = loadMethod == ROTATIONS || loadMethod == ROTATIONS_AND_POSITIONS || loadMethod == ROTATIONS_AND_SCALES ||
-                         loadMethod == ROT_POS_AND_SCALES || loadMethod == SELECTIVE || loadMethod == SELECTIVE_ROT;
-    bool loadPositions = loadMethod == POSITIONS || loadMethod == ROTATIONS_AND_POSITIONS || loadMethod == POSITIONS_AND_SCALES ||
-                         loadMethod == ROT_POS_AND_SCALES || loadMethod == SELECTIVE;
-    bool loadScales    = loadMethod == SCALES || loadMethod == POSITIONS_AND_SCALES || loadMethod == ROTATIONS_AND_SCALES ||
-                         loadMethod == ROT_POS_AND_SCALES || loadMethod == SELECTIVE;
-    bool loadSelective = loadMethod == SELECTIVE || loadMethod == SELECTIVE_ROT;
+    bool loadRotations = loadMethod == E_LoadPoseMethods::ROTATIONS || loadMethod == E_LoadPoseMethods::ROTATIONS_AND_POSITIONS ||
+                         loadMethod == E_LoadPoseMethods::ROTATIONS_AND_SCALES || loadMethod == E_LoadPoseMethods::ROT_POS_AND_SCALES ||
+                         loadMethod == E_LoadPoseMethods::SELECTIVE || loadMethod == E_LoadPoseMethods::SELECTIVE_ROT;
+    bool loadPositions = loadMethod == E_LoadPoseMethods::POSITIONS || loadMethod == E_LoadPoseMethods::ROTATIONS_AND_POSITIONS ||
+                         loadMethod == E_LoadPoseMethods::POSITIONS_AND_SCALES || loadMethod == E_LoadPoseMethods::ROT_POS_AND_SCALES ||
+                         loadMethod == E_LoadPoseMethods::SELECTIVE;
+    bool loadScales    = loadMethod == E_LoadPoseMethods::SCALES || loadMethod == E_LoadPoseMethods::POSITIONS_AND_SCALES || loadMethod == E_LoadPoseMethods::ROTATIONS_AND_SCALES ||
+                         loadMethod == E_LoadPoseMethods::ROT_POS_AND_SCALES || loadMethod == E_LoadPoseMethods::SELECTIVE;
+    bool loadSelective = loadMethod == E_LoadPoseMethods::SELECTIVE || loadMethod == E_LoadPoseMethods::SELECTIVE_ROT;
 
     try
     {
@@ -1045,7 +1047,7 @@ void FSFloaterPoser::stopPosingAllAvatars()
 
     for (auto listItem : mAvatarSelectionScrollList->getAllData())
     {
-        LLScrollListCell* cell = listItem->getColumn(COL_UUID);
+        LLScrollListCell* cell = listItem->getColumn((S32)E_Columns::COL_UUID);
         if (!cell)
             continue;
 
@@ -1142,40 +1144,40 @@ void FSFloaterPoser::refreshJointScrollListMembers()
 
         switch (poserJoint_iter->boneType())
         {
-            case WHOLEAVATAR:
+            case E_BoneTypes::WHOLEAVATAR:
                 item = mEntireAvJointScroll->addElement(row);
                 mEntireAvJointScroll->selectFirstItem();
                 break;
 
-            case BODY:
+            case E_BoneTypes::BODY:
                 if (hasListHeader)
                     addHeaderRowToScrollList(poserJoint_iter->jointName(), mBodyJointsScrollList);
 
                 item = mBodyJointsScrollList->addElement(row);
                 break;
 
-            case FACE:
+            case E_BoneTypes::FACE:
                 if (hasListHeader)
                     addHeaderRowToScrollList(poserJoint_iter->jointName(), mFaceJointsScrollList);
 
                 item = mFaceJointsScrollList->addElement(row);
                 break;
 
-            case HANDS:
+            case E_BoneTypes::HANDS:
                 if (hasListHeader)
                     addHeaderRowToScrollList(poserJoint_iter->jointName(), mHandJointsScrollList);
 
                 item = mHandJointsScrollList->addElement(row);
                 break;
 
-            case MISC:
+            case E_BoneTypes::MISC:
                 if (hasListHeader)
                     addHeaderRowToScrollList(poserJoint_iter->jointName(), mMiscJointsScrollList);
 
                 item = mMiscJointsScrollList->addElement(row);
                 break;
 
-            case COL_VOLUMES:
+            case E_BoneTypes::COL_VOLUMES:
                 if (hasListHeader)
                     addHeaderRowToScrollList(poserJoint_iter->jointName(), mCollisionVolumesScrollList);
 
@@ -1217,11 +1219,11 @@ LLSD FSFloaterPoser::createRowForJoint(const std::string& jointName, bool isHead
         return NULL;
 
     LLSD row;
-    row["columns"][COL_ICON]["column"] = "icon";
-    row["columns"][COL_ICON]["type"]   = "icon";
-    row["columns"][COL_ICON]["value"]  = headerValue;
-    row["columns"][COL_NAME]["column"] = "joint";
-    row["columns"][COL_NAME]["value"]  = jointValue;
+    row["columns"][(S32)E_Columns::COL_ICON]["column"] = "icon";
+    row["columns"][(S32)E_Columns::COL_ICON]["type"]   = "icon";
+    row["columns"][(S32)E_Columns::COL_ICON]["value"]  = headerValue;
+    row["columns"][(S32)E_Columns::COL_NAME]["column"] = "joint";
+    row["columns"][(S32)E_Columns::COL_NAME]["value"]  = jointValue;
 
     return row;
 }
@@ -1592,7 +1594,7 @@ LLVOAvatar* FSFloaterPoser::getUiSelectedAvatar() const
     if (!item)
         return nullptr;
 
-    LLScrollListCell* cell = item->getColumn(COL_UUID);
+    LLScrollListCell* cell = item->getColumn((S32)E_Columns::COL_UUID);
     if (!cell)
         return nullptr;
 
@@ -1605,7 +1607,7 @@ void FSFloaterPoser::setUiSelectedAvatar(const LLUUID& avatarToSelect)
 {
     for (auto listItem : mAvatarSelectionScrollList->getAllData())
     {
-        LLScrollListCell* cell = listItem->getColumn(COL_UUID);
+        LLScrollListCell* cell = listItem->getColumn((S32)E_Columns::COL_UUID);
         if (!cell)
             continue;
 
@@ -1624,7 +1626,7 @@ void FSFloaterPoser::setPoseSaveFileTextBoxToUiSelectedAvatarSaveFileName()
     if (!item)
         return;
 
-    LLScrollListCell* cell = item->getColumn(COL_SAVE);
+    LLScrollListCell* cell = item->getColumn((S32)E_Columns::COL_SAVE);
     if (!cell)
         return;
 
@@ -1642,7 +1644,7 @@ void FSFloaterPoser::setUiSelectedAvatarSaveFileName(const std::string& saveFile
     if (!item)
         return;
 
-    LLScrollListCell* cell = item->getColumn(COL_SAVE);
+    LLScrollListCell* cell = item->getColumn((S32)E_Columns::COL_SAVE);
     if (!cell)
         return;
 
@@ -2107,7 +2109,7 @@ uuid_vec_t FSFloaterPoser::getCurrentlyListedAvatarsAndAnimeshes() const
 
     for (auto listItem : mAvatarSelectionScrollList->getAllData())
     {
-        LLScrollListCell* cell = listItem->getColumn(COL_UUID);
+        LLScrollListCell* cell = listItem->getColumn((S32)E_Columns::COL_UUID);
         if (!cell)
             continue;
 
@@ -2125,7 +2127,7 @@ S32 FSFloaterPoser::getAvatarListIndexForUuid(const LLUUID& toFind) const
     {
         result++;
 
-        LLScrollListCell* cell = listItem->getColumn(COL_UUID);
+        LLScrollListCell* cell = listItem->getColumn((S32)E_Columns::COL_UUID);
         if (!cell)
             continue;
 
@@ -2178,15 +2180,15 @@ void FSFloaterPoser::onAvatarsRefresh()
             continue;
 
         LLSD row;
-        row["columns"][COL_ICON]["column"] = "icon";
-        row["columns"][COL_ICON]["type"]   = "icon";
-        row["columns"][COL_ICON]["value"]  = iconCatagoryName;
-        row["columns"][COL_NAME]["column"] = "name";
-        row["columns"][COL_NAME]["value"]  = av_name.getDisplayName();
-        row["columns"][COL_UUID]["column"] = "uuid";
-        row["columns"][COL_UUID]["value"]  = uuid;
-        row["columns"][COL_SAVE]["column"] = "saveFileName";
-        row["columns"][COL_SAVE]["value"]  = "";
+        row["columns"][(S32)E_Columns::COL_ICON]["column"] = "icon";
+        row["columns"][(S32)E_Columns::COL_ICON]["type"]   = "icon";
+        row["columns"][(S32)E_Columns::COL_ICON]["value"]  = iconCatagoryName;
+        row["columns"][(S32)E_Columns::COL_NAME]["column"] = "name";
+        row["columns"][(S32)E_Columns::COL_NAME]["value"]  = av_name.getDisplayName();
+        row["columns"][(S32)E_Columns::COL_UUID]["column"] = "uuid";
+        row["columns"][(S32)E_Columns::COL_UUID]["value"]  = uuid;
+        row["columns"][(S32)E_Columns::COL_SAVE]["column"] = "saveFileName";
+        row["columns"][(S32)E_Columns::COL_SAVE]["value"]  = "";
         LLScrollListItem* item             = mAvatarSelectionScrollList->addElement(row);
     }
 
@@ -2207,15 +2209,15 @@ void FSFloaterPoser::onAvatarsRefresh()
             continue;
 
         LLSD row;
-        row["columns"][COL_ICON]["column"] = "icon";
-        row["columns"][COL_ICON]["type"]   = "icon";
-        row["columns"][COL_ICON]["value"]  = iconObjectName;
-        row["columns"][COL_NAME]["column"] = "name";
-        row["columns"][COL_NAME]["value"]  = animeshName;
-        row["columns"][COL_UUID]["column"] = "uuid";
-        row["columns"][COL_UUID]["value"]  = avatar->getID();
-        row["columns"][COL_SAVE]["column"] = "saveFileName";
-        row["columns"][COL_SAVE]["value"]  = "";
+        row["columns"][(S32)E_Columns::COL_ICON]["column"] = "icon";
+        row["columns"][(S32)E_Columns::COL_ICON]["type"]   = "icon";
+        row["columns"][(S32)E_Columns::COL_ICON]["value"]  = iconObjectName;
+        row["columns"][(S32)E_Columns::COL_NAME]["column"] = "name";
+        row["columns"][(S32)E_Columns::COL_NAME]["value"]  = animeshName;
+        row["columns"][(S32)E_Columns::COL_UUID]["column"] = "uuid";
+        row["columns"][(S32)E_Columns::COL_UUID]["value"]  = avatar->getID();
+        row["columns"][(S32)E_Columns::COL_SAVE]["column"] = "saveFileName";
+        row["columns"][(S32)E_Columns::COL_SAVE]["value"]  = "";
         mAvatarSelectionScrollList->addElement(row);
     }
 
@@ -2249,7 +2251,7 @@ void FSFloaterPoser::refreshTextHighlightingOnAvatarScrollList()
 {
     for (auto listItem : mAvatarSelectionScrollList->getAllData())
     {
-        LLScrollListCell* cell = listItem->getColumn(COL_UUID);
+        LLScrollListCell* cell = listItem->getColumn((S32)E_Columns::COL_UUID);
         if (!cell)
             continue;
 
@@ -2257,9 +2259,9 @@ void FSFloaterPoser::refreshTextHighlightingOnAvatarScrollList()
         LLVOAvatar* listAvatar = getAvatarByUuid(selectedAvatarId);
 
         if (mPoserAnimator.isPosingAvatar(listAvatar))
-            ((LLScrollListText *) listItem->getColumn(COL_NAME))->setFontStyle(LLFontGL::BOLD);
+            ((LLScrollListText*)listItem->getColumn((S32)E_Columns::COL_NAME))->setFontStyle(LLFontGL::BOLD);
         else
-            ((LLScrollListText *) listItem->getColumn(COL_NAME))->setFontStyle(LLFontGL::NORMAL);
+            ((LLScrollListText*)listItem->getColumn((S32)E_Columns::COL_NAME))->setFontStyle(LLFontGL::NORMAL);
     }
 }
 
@@ -2302,15 +2304,15 @@ void FSFloaterPoser::addBoldToScrollList(LLScrollListCtrl* list, LLVOAvatar* ava
         if (considerExternalFormatSaving)
         {
             if (mPoserAnimator.baseRotationIsZero(avatar, *userData))
-                ((LLScrollListText*) listItem->getColumn(COL_ICON))->setValue(iconValue);
+                ((LLScrollListText*)listItem->getColumn((S32)E_Columns::COL_ICON))->setValue(iconValue);
             else
-                ((LLScrollListText*) listItem->getColumn(COL_ICON))->setValue("");
+                ((LLScrollListText*)listItem->getColumn((S32)E_Columns::COL_ICON))->setValue("");
         }
 
         if (mPoserAnimator.isPosingAvatarJoint(avatar, *userData))
-            ((LLScrollListText *) listItem->getColumn(COL_NAME))->setFontStyle(LLFontGL::BOLD);
+            ((LLScrollListText*)listItem->getColumn((S32)E_Columns::COL_NAME))->setFontStyle(LLFontGL::BOLD);
         else
-            ((LLScrollListText *) listItem->getColumn(COL_NAME))->setFontStyle(LLFontGL::NORMAL);
+            ((LLScrollListText*)listItem->getColumn((S32)E_Columns::COL_NAME))->setFontStyle(LLFontGL::NORMAL);
     }
 }
 
@@ -2386,7 +2388,7 @@ void FSFloaterPoser::writeBvhFragment(llofstream* fileStream, LLVOAvatar* avatar
 
     switch (joint->boneType())
     {
-        case WHOLEAVATAR:
+        case E_BoneTypes::WHOLEAVATAR:
             *fileStream << "ROOT " + joint->jointName() << std::endl;
             *fileStream << "{" << std::endl;
             *fileStream << getTabs(tabStops + 1) + "OFFSET " + joint->bvhOffset() << std::endl;
@@ -2458,7 +2460,7 @@ void FSFloaterPoser::writeFirstFrameOfBvhMotion(llofstream* fileStream, const FS
 
     switch (joint->boneType())
     {
-        case WHOLEAVATAR:
+        case E_BoneTypes::WHOLEAVATAR:
             *fileStream << "0.000000 0.000000 0.000000 0.0 0.0 0.0";
             break;
 
@@ -2485,7 +2487,7 @@ void FSFloaterPoser::writeBvhMotion(llofstream* fileStream, LLVOAvatar* avatar, 
 
     switch (joint->boneType())
     {
-        case WHOLEAVATAR:
+        case E_BoneTypes::WHOLEAVATAR:
             *fileStream << vec3ToXYZString(position) + " " + rotationToString(rotation);
             break;
 
