@@ -2037,9 +2037,18 @@ bool LLViewerFetchedTexture::updateFetch()
         return false;
     }
 
-    S32 current_discard = getCurrentDiscardLevelForFetching();
+    // S32 current_discard = getCurrentDiscardLevelForFetching();
+    S32 current_discard = getDiscardLevel();
     S32 desired_discard = getDesiredDiscardLevel();
     F32 decode_priority = mMaxVirtualSize;
+    F32 importance      = (F32)((0.01 + getMaxFaceImportance()) / 2);
+
+    if ((current_discard < 0 && importance > 0) || forHUD() || forParticle())
+        decode_priority = (4096 * 4096);
+    decode_priority *= llclamp(importance, 0.1, 4);
+    decode_priority /= 1 + ((getFTType() == FTT_SERVER_BAKE) * 4);
+    decode_priority = llmin(decode_priority, LLViewerFetchedTexture::sMaxVirtualSize);
+    // </TS:3T>
 
     if (mIsFetching)
     {
@@ -2061,8 +2070,9 @@ bool LLViewerFetchedTexture::updateFetch()
         if (finished)
         {
             mIsFetching = false;
-            mLastFetchState = -1;
+            // mLastFetchState = -1; <TS:3T> Do not reset, to keep track of last fetch response.
             mLastPacketTimer.reset();
+            mLastTimeUpdated.reset();
         }
         else
         {
@@ -2070,15 +2080,122 @@ bool LLViewerFetchedTexture::updateFetch()
                                                                         mFetchPriority, mFetchDeltaTime, mRequestDeltaTime, mCanUseHTTP);
         }
 
-        if (!processFetchResults(desired_discard, current_discard, fetch_discard, decode_priority))
+        // We may have data ready regardless of whether or not we are finished (e.g. waiting on write)
+        if (mRawImage.notNull())
         {
-            return false;
+            LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - has raw image");
+            LLTexturePipelineTester* tester = (LLTexturePipelineTester*)LLMetricPerformanceTesterBasic::getTester(sTesterName);
+            if (tester)
+            {
+                mIsFetched = true;
+                tester->updateTextureLoadingStats(this, mRawImage, LLAppViewer::getTextureFetch()->isFromLocalCache(mID));
+            }
+            mRawDiscardLevel = fetch_discard;
+            if ((mRawImage->getDataSize() > 0 && mRawDiscardLevel >= 0) &&
+                (current_discard < 0 || mRawDiscardLevel != current_discard)) // <TS:3T> Stop expecting all new discards to always be lower
+            {
+                LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - data good");
+                mFullWidth  = mRawImage->getWidth() << mRawDiscardLevel;
+                mFullHeight = mRawImage->getHeight() << mRawDiscardLevel;
+                setTexelsPerImage();
+
+                if (mFullWidth > MAX_IMAGE_SIZE || mFullHeight > MAX_IMAGE_SIZE)
+                {
+                    // discard all oversized textures.
+                    LL_INFOS() << "Discarding oversized texture, width= " << mFullWidth << ", height= " << mFullHeight << LL_ENDL;
+                    destroyRawImage();
+                    LL_WARNS() << "oversize, setting as missing" << LL_ENDL;
+                    setIsMissingAsset();
+                    mRawDiscardLevel = INVALID_DISCARD_LEVEL;
+                    mIsFetching      = false;
+                    mLastPacketTimer.reset();
+                }
+                else
+                {
+                    mIsRawImageValid = true;
+                    addToCreateTexture();
+                }
+
+                if (mBoostLevel == LLGLTexture::BOOST_ICON)
+                {
+                    S32 expected_width  = mKnownDrawWidth > 0 ? mKnownDrawWidth : DEFAULT_ICON_DIMENSIONS;
+                    S32 expected_height = mKnownDrawHeight > 0 ? mKnownDrawHeight : DEFAULT_ICON_DIMENSIONS;
+                    if (mRawImage && (mRawImage->getWidth() > expected_width || mRawImage->getHeight() > expected_height))
+                    {
+                        // scale oversized icon, no need to give more work to gl
+                        // since we got mRawImage from thread worker and image may be in use (ex: writing cache), make a copy
+                        mRawImage = mRawImage->scaled(expected_width, expected_height);
+                    }
+                }
+
+                if (mBoostLevel == LLGLTexture::BOOST_THUMBNAIL)
+                {
+                    S32 expected_width  = mKnownDrawWidth > 0 ? mKnownDrawWidth : DEFAULT_THUMBNAIL_DIMENSIONS;
+                    S32 expected_height = mKnownDrawHeight > 0 ? mKnownDrawHeight : DEFAULT_THUMBNAIL_DIMENSIONS;
+                    if (mRawImage && (mRawImage->getWidth() > expected_width || mRawImage->getHeight() > expected_height))
+                    {
+                        // scale oversized icon, no need to give more work to gl
+                        // since we got mRawImage from thread worker and image may be in use (ex: writing cache), make a copy
+                        mRawImage = mRawImage->scaled(expected_width, expected_height);
+                    }
+                }
+
+                return true;
+            }
+            else
+            {
+                LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - data not needed");
+                // Data is ready but we don't need it
+                // (received it already while fetcher was writing to disk)
+                destroyRawImage();
+                return false; // done
+            }
         }
 
-        if (mIsFetching)
+        if (!mIsFetching)
         {
-            static const F32 MAX_HOLD_TIME = 5.0f; //seconds to wait before canceling fecthing if decode_priority is 0.f.
-            if(decode_priority > 0.0f || mStopFetchingTimer.getElapsedTimeF32() > MAX_HOLD_TIME)
+            if ((decode_priority > 0) && (mRawDiscardLevel < 0 || mRawDiscardLevel == INVALID_DISCARD_LEVEL))
+            {
+                // We finished but received no data
+                if (getDiscardLevel() < 0)
+                {
+                    if (getFTType() != FTT_MAP_TILE)
+                    {
+                        LL_WARNS() << mID << " Fetch failure, setting as missing, decode_priority " << decode_priority
+                                   << " mRawDiscardLevel " << mRawDiscardLevel << " current_discard " << current_discard << " stats "
+                                   << mLastHttpGetStatus.toHex() << LL_ENDL;
+                    }
+                    setIsMissingAsset();
+                    desired_discard = -1;
+                }
+                else
+                {
+                    // LL_WARNS() << mID << ": Setting min discard to " << current_discard << LL_ENDL;
+                    if (current_discard >= 0)
+                    {
+                        mMinDiscardLevel = current_discard;
+                        // desired_discard = current_discard;
+                    }
+                    else
+                    {
+                        S32 dis_level    = getDiscardLevel();
+                        mMinDiscardLevel = dis_level;
+                        // desired_discard = dis_level;
+                    }
+                }
+                destroyRawImage();
+            }
+            else if (mRawImage.notNull())
+            {
+                // We have data, but our fetch failed to return raw data
+                // *TODO: FIgure out why this is happening and fix it
+                destroyRawImage();
+            }
+        }
+        else
+        {
+            static const F32 MAX_HOLD_TIME = 5.0f; // seconds to wait before canceling fecthing if decode_priority is 0.f.
+            if (decode_priority > 0.0f || mStopFetchingTimer.getElapsedTimeF32() > MAX_HOLD_TIME)
             {
                 mStopFetchingTimer.reset();
                 LLAppViewer::getTextureFetch()->updateRequestPriority(mID, decode_priority);
@@ -2086,9 +2203,10 @@ bool LLViewerFetchedTexture::updateFetch()
         }
     }
 
-    S32 fetchstate = LLAppViewer::getTextureFetch()->getFetchState(mID, mDownloadProgress, mRequestedDownloadPriority, mFetchPriority, mFetchDeltaTime, mRequestDeltaTime, mCanUseHTTP);
-    if (fetchstate < 14)  // LLTextureFetchWorker::INIT = 1, DONE = 14
-            LLAppViewer::getTextureFetch()->updateRequestPriority(mID, decode_priority);
+    S32 fetchstate = LLAppViewer::getTextureFetch()->getFetchState(mID, mDownloadProgress, mRequestedDownloadPriority, mFetchPriority,
+                                                                   mFetchDeltaTime, mRequestDeltaTime, mCanUseHTTP);
+    if (fetchstate < 14) // LLTextureFetchWorker::INIT = 1, DONE = 14
+        LLAppViewer::getTextureFetch()->updateRequestPriority(mID, decode_priority);
 
     desired_discard = llmin(desired_discard, getMaxDiscardLevel());
 
@@ -2098,12 +2216,12 @@ bool LLViewerFetchedTexture::updateFetch()
         LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - priority <= 0");
         make_request = false;
     }
-    else if(mDesiredDiscardLevel > getMaxDiscardLevel())
+    else if (mDesiredDiscardLevel > getMaxDiscardLevel())
     {
         LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - desired > max");
         make_request = false;
     }
-    else  if (mNeedsCreateTexture || mIsMissingAsset)
+    else if (mNeedsCreateTexture || mIsMissingAsset)
     {
         LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - create or missing");
         make_request = false;
@@ -2121,7 +2239,7 @@ bool LLViewerFetchedTexture::updateFetch()
     else if ((mBoostLevel > 0) && current_discard >= 0 && current_discard <= desired_discard)
     {
         LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - do not LOD adjust Boost");
-            make_request = false;
+        make_request = false;
     }
     /*
     //else if (hasCameraChanged(5) && (!forSculpt() || importance <= 0.0f || desired_discard > 2))
@@ -2137,29 +2255,7 @@ bool LLViewerFetchedTexture::updateFetch()
         LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - Texture was updated recently");
         make_request = false;
     }
-    else if (mMaxVirtualSize <= 0 && !forSculpt())
-    {
-        LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - mMaxVirtualSize too small for update");
-        //make_request = false;
-    }
     */
-    //else if (current_discard >= 0 && current_discard <= mMinDiscardLevel)
-    //{
-    //    LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - current < min");
-    //    make_request = false;
-    //}
-    //else if (current_discard >= 0 && current_discard <= mMinDiscardLevel)
-    //{
-    //    LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - current < min");
-    //    make_request = false;
-    //}
-    //else if(mCachedRawImage.notNull() // can be empty
-    //        && mCachedRawImageReady
-    //        && (current_discard < 0)) // <TS:3T> Only use cached image at first texture load.
-    //{
-    //    make_request = false;
-    //    switchToCachedImage(); //use the cached raw data first
-    //}
 
     if (forSculpt() || getBoostLevel() == LLGLTexture::BOOST_SCULPTED)
     {
@@ -2186,12 +2282,11 @@ bool LLViewerFetchedTexture::updateFetch()
             }
 
             make_request = false;
-
         }
         else
         {
             // already at a higher resolution mip, don't discard
-            if (current_discard >= 0 && current_discard == desired_discard)  // <TS:3T> Stop expecting all new discards to always be lower
+            if (current_discard >= 0 && current_discard == desired_discard) // <TS:3T> Stop expecting all new discards to always be lower
             {
                 LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - current == desired");
                 make_request = false;
@@ -2221,25 +2316,23 @@ bool LLViewerFetchedTexture::updateFetch()
         }
 
         // bypass texturefetch directly by pulling from LLTextureCache
-        S32 fetch_request_response = -1;
-        S32 worker_discard = -1;
-        fetch_request_response = LLAppViewer::getTextureFetch()->createRequest(mFTType, mUrl, getID(), getTargetHost(), decode_priority,
-                                                                              w, h, c, desired_discard, needsAux(), mCanUseHTTP);
-        if (fetch_request_response == -1)
+        S32 fetch_request_discard = -1;
+        fetch_request_discard = LLAppViewer::getTextureFetch()->createRequest(mFTType, mUrl, getID(), getTargetHost(), decode_priority, w,
+                                                                              h, c, desired_discard, needsAux(), mCanUseHTTP);
+        if (fetch_request_discard == -1)
         {
-            LL_WARNS_ONCE() << "fetchRequest: " << mID << " " << (S32) getType() << " wXh " << w << " x " << h
-                       << " Current: " << current_discard << " Current Size: " << mGLTexturep->getWidth(current_discard) << " x "
-                       << mGLTexturep->getHeight(current_discard) << " previous: " << (S32) mRequestedDiscardLevel
-                            << " Desired: " << desired_discard << " mTextureState: " << (S32) mTextureState
-                       << " needsAux(): " << (S32) needsAux() << " getFTType(): " << getFTType() << " forSculpt(): " << forSculpt()
-                       << " mForceToSaveRawImage: " << mForceToSaveRawImage << " mSavedRawDiscardLevel: " << mSavedRawDiscardLevel
-                       << " mBoostLevel: " << mBoostLevel
-                       << " mMaxVirtualSize:" << (S32)mMaxVirtualSize
-                       << " fetch_request_discard: " << (S32) fetch_request_response << " sDesiredDiscardBias: " << LLViewerTexture::sDesiredDiscardBias
-                       << LL_ENDL;
+            LL_WARNS_ONCE() << "fetchRequest: " << mID << " " << (S32)getType() << " wXh " << w << " x " << h
+                            << " Current: " << current_discard << " Current Size: " << mGLTexturep->getWidth(current_discard) << " x "
+                            << mGLTexturep->getHeight(current_discard) << " previous: " << (S32)mRequestedDiscardLevel
+                            << " Desired: " << desired_discard << " mTextureState: " << (S32)mTextureState
+                            << " needsAux(): " << (S32)needsAux() << " getFTType(): " << getFTType() << " forSculpt(): " << forSculpt()
+                            << " mForceToSaveRawImage: " << mForceToSaveRawImage << " mSavedRawDiscardLevel: " << mSavedRawDiscardLevel
+                            << " mBoostLevel: " << mBoostLevel << " mMaxVirtualSize:" << (S32)mMaxVirtualSize
+                            << " fetch_request_discard: " << (S32)fetch_request_discard
+                            << " sDesiredDiscardBias: " << LLViewerTexture::sDesiredDiscardBias << LL_ENDL;
         }
-        mLastFetchState = fetch_request_response;
-        if (fetch_request_response >= 0)
+        mLastFetchState = fetch_request_discard;
+        if (fetch_request_discard >= 0)
         {
             mLastUpdateFrame = LLViewerOctreeEntryData::getCurrentFrame();
             LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - request created");
@@ -2247,36 +2340,9 @@ bool LLViewerFetchedTexture::updateFetch()
             mIsFetching = true;
             // in some cases createRequest can modify discard, as an example
             // bake textures are always at discard 0
-            mRequestedDiscardLevel = llmin(desired_discard, fetch_request_response);
-            mFetchState = LLAppViewer::getTextureFetch()->getFetchState(mID, mDownloadProgress, mRequestedDownloadPriority,
-                                                       mFetchPriority, mFetchDeltaTime, mRequestDeltaTime, mCanUseHTTP);
-        }
-        else if (fetch_request_response == LLTextureFetch::CREATE_REQUEST_ERROR_TRANSITION)
-        {
-            LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - processing transition error");
-            // Request wasn't created because similar one finished or is in a transitional state, check worker state
-            // As an example can happen if an image (like a server bake always fetches at dis 0), was scaled down to
-            // needed discard after fetching then sudenly needed higher dis and worker wasn't yet deleted. Worker
-            // discard will be identical to requested one and worker will have nothing new to do despite GL image
-            // not being up to data.
-            S32 desired_discard;
-            S32 decoded_discard;
-            bool decoded;
-            S32 fetch_state = LLAppViewer::getTextureFetch()->getLastFetchState(mID, desired_discard, decoded_discard, decoded);
-            if (fetch_state > 1 && decoded && decoded_discard >=0 && decoded_discard <= desired_discard)
-            {
-                // worker actually has the image
-                if (mRawImage.notNull()) sRawCount--;
-                if (mAuxRawImage.notNull()) sAuxCount--;
-                decoded_discard = LLAppViewer::getTextureFetch()->getLastRawImage(getID(), mRawImage, mAuxRawImage);
-                if (mRawImage.notNull()) sRawCount++;
-                if (mAuxRawImage.notNull())
-                {
-                    mHasAux = true;
-                    sAuxCount++;
-                }
-                processFetchResults(desired_discard, current_discard, decoded_discard, decode_priority);
-            }
+            mRequestedDiscardLevel = llmin(desired_discard, fetch_request_discard);
+            mFetchState = LLAppViewer::getTextureFetch()->getFetchState(mID, mDownloadProgress, mRequestedDownloadPriority, mFetchPriority,
+                                                                        mFetchDeltaTime, mRequestDeltaTime, mCanUseHTTP);
         }
 
         // If createRequest() failed, that means one of two things:
@@ -3177,7 +3243,7 @@ void LLViewerLODTexture::processTextureStats()
         // Off screen textures at 6 would not downscale.
         mDesiredDiscardLevel = llmin(mMinDesiredDiscardLevel, (S8)(MAX_DISCARD_LEVEL));
         // </FS:minerjr> [FIRE-35081]
-        mDesiredDiscardLevel = llmin(mDesiredDiscardLevel, (S32)mLoadedCallbackDesiredDiscardLevel);
+        //mDesiredDiscardLevel = llmin(mDesiredDiscardLevel, (S32)mLoadedCallbackDesiredDiscardLevel);
         /* <TommyTheTerrible> Unnecessary component of older brute force texture system.
         // <FS:minerjr> [FIRE-35081] Blurry prims not changing with graphics settings, not happening with SL Viewer
         // Add scale down here as the textures off screen were not getting scaled down properly
@@ -3195,12 +3261,12 @@ void LLViewerLODTexture::processTextureStats()
     else if (!mFullWidth  || !mFullHeight)
     {
         mDesiredDiscardLevel =  getMaxDiscardLevel();
-        mDesiredDiscardLevel = llmin(mDesiredDiscardLevel, (S32)mLoadedCallbackDesiredDiscardLevel);
+        //mDesiredDiscardLevel = llmin(mDesiredDiscardLevel, (S32)mLoadedCallbackDesiredDiscardLevel);
     }
     else
     {
         // <FS:minerjr> [FIRE-35081] Blurry prims not changing with graphics settings, not happening with SL Viewer
-        /*
+        
         //static const F64 log_2 = log(2.0);
         static const F64 log_4 = log(4.0);
 
@@ -3227,20 +3293,20 @@ void LLViewerLODTexture::processTextureStats()
 
         discard_level = floorf(discard_level);
 
-        F32 min_discard = 0.f;
-        */
+        //F32 min_discard = 0.f;
+        
 
         // Use a S32 value for the discard level
-        S32 discard_level = 0;
+        //S32 discard_level = 0;
         // Find the best discard that covers the entire mMaxVirtualSize of the on screen texture
-        for (; discard_level <= MAX_DISCARD_LEVEL; discard_level++)
-        {
+        //for (; discard_level <= MAX_DISCARD_LEVEL; discard_level++)
+        //{
             // If the max virtual size is greater then the current discard level, then break out of the loop and use the current discard level
-            if (mMaxVirtualSize > getWidth(discard_level) * getHeight(discard_level))
-            {
-                break;
-            }
-        }
+         //   if (mMaxVirtualSize > getWidth(discard_level) * getHeight(discard_level))
+        //    {
+        //        break;
+        //   }
+        //}
 
         // Use a S32 instead of a float
         S32 min_discard = 0;  
