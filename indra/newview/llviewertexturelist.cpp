@@ -1386,7 +1386,6 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
             if (iter->second->getGLTexture() && get_element_type(iter->second->getBoostLevel()) == TEX_LIST_STANDARD)
             // </FS:minerjr> [FIRE-35081]
             {
-                if (!iter->second->hasFetcher())
                     entries.push_back(iter->second);
             }
             ++iter;
@@ -1395,21 +1394,13 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
         }
     }
 
-    LLTimer timer;
     LLPointer<LLViewerFetchedTexture> last_imagep;
 
     for (auto& imagep : entries)
     {
-        bool check_faces = (imagep->getBoostLevel() != LLViewerTexture::BOOST_HIGH);
-        if (updateImageDecodePriority(imagep, check_faces))
-            imagep->updateFetch();
-
+        updateImageDecodePriority(imagep);
+        imagep->updateFetch();
         last_imagep = imagep;
-
-        if (timer.getElapsedTimeF32() > max_time)
-        {
-            break;
-        }
     }
 
     if (last_imagep)
@@ -1417,12 +1408,19 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
         mLastUpdateKey = LLTextureKey(last_imagep->getID(), (ETexListType)last_imagep->getTextureListType());
     }
 
+    S32 fetch_count = 0;
     for (auto pair : mUUIDMap)
     {
         if (pair.second->hasFetcher())
+        {
             pair.second->updateFetch();
+            fetch_count++;
+        }
+        if (fetch_count > update_count / 2)
+            break;
     }
-    return timer.getElapsedTimeF32();
+
+    return 0.f;
 }
 
 void LLViewerTextureList::updateImagesUpdateStats()
