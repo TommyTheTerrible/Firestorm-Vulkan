@@ -635,6 +635,7 @@ void LLSpatialGroup::updateDistance(LLCamera &camera)
                         (F32) mOctreeNode->getSize().getLength3().getF32();
         mDistance = getSpatialPartition()->calcDistance(this, camera);
         mPixelArea = getSpatialPartition()->calcPixelArea(this, camera);
+        /*
         //F32 new_mip = (F32)ceil(log(sqrt(mPixelArea)) / log(2));
         F32 new_mip = (F32)(std::round((log(sqrt(mPixelArea)) / log(2)) * 20) / 20); // Round to 1/5th increments
         if (mMIPMax != new_mip)  // <TS:3T> Make LOD changes depending on MIP scale
@@ -650,6 +651,7 @@ void LLSpatialGroup::updateDistance(LLCamera &camera)
             
         }
         mMIPMax = new_mip;
+        */
     }
 }
 
