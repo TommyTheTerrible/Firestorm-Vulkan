@@ -1032,7 +1032,7 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
         // If texture is used for an animation, increase it's size
         assign_size *= (float) llmax(pow((int)(for_anim > 0 && in_frustum) * 2, 4), 1);
         // Increase importance if used in an animation in frustum, a HUD or a particle.
-        assign_importance += (float) ((0.6 * (int)(for_anim > 0) * (int) in_frustum) + (1 * (int)(for_hud > 0)) + (1 * (int)(for_particle > 0)));
+        assign_importance += (float) ((0.6 * (int)(for_anim > 0) * (int) in_frustum) + (10 * (int)(for_hud > 0)) + (1 * (int)(for_particle > 0)));
         // Increase importance if used for Sculpty mesh
         assign_importance += (int)imagep->isForSculptOnly();
         if (imagep->getBoostLevel() > 0 || num_faces > max_faces_to_check)
@@ -1049,7 +1049,7 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
         needs_fetch = (imagep->addTextureStats(assign_size) ||
             imagep->getDesiredDiscardLevel() != imagep->getDiscardLevel());
         // Store the importance with the image to use for prioritization later.
-        imagep->setMaxFaceImportance(assign_importance);
+        imagep->setMaxFaceImportance(llmin(assign_importance, 10));
         imagep->processTextureStats();
     }
 
