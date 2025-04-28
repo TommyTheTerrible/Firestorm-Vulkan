@@ -130,6 +130,11 @@ public:
 
     virtual bool isViewerMediaTexture() const { return false; }
 
+    void setForHUD(bool value = true) { mForHUD = value; }
+    void setForParticle(bool value = true) { mForParticle = value; }
+    bool forHUD() const { return mForHUD; }
+    bool forParticle() const { return mForParticle; }
+
     /*virtual*/ bool bindDefaultImage(const S32 stage = 0) ;
     /*virtual*/ bool bindDebugImage(const S32 stage = 0) ;
     /*virtual*/ void forceImmediateUpdate() ;
@@ -214,6 +219,8 @@ protected:
 
     //do not use LLPointer here.
     LLViewerMediaTexture* mParcelMedia ;
+    bool mForHUD;      // a flag if the texture is used on a HUD
+    bool mForParticle; // a flag if the texture is used as a particle
 
     LL::WorkQueue::weak_t mMainQueue;
     LL::WorkQueue::weak_t mImageQueue;
@@ -414,11 +421,7 @@ public:
     //---------------
 
     void setForSculpt();
-    void setForHUD() { mForHUD = true; }
-    void setForParticle() { mForParticle = true; }
     bool forSculpt() const {return mForSculpt;}
-    bool forHUD() const { return mForHUD; }
-    bool forParticle() const { return mForParticle; }
     bool isForSculptOnly() const;
 
     //raw image management
@@ -564,8 +567,6 @@ protected:
     // <FS:minerjr> [FIRE-35081] Blurry prims not changing with graphics settings, not happening with SL Viewer
     F32    mCloseToCamera; // Float (0.0f or 1.0f) to indicate if the texture is close to the camera
     // </FS:minerjr> [FIRE-35081]
-    bool   mForHUD ;     // a flag if the texture is used on a HUD
-    bool   mForParticle ;  // a flag if the texture is used as a particle
 
 public:
     LLTimer mLastTimeUpdated;

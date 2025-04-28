@@ -6271,6 +6271,7 @@ void LLViewerObject::setParticleSource(const LLPartSysData& particle_parameters,
             else
             {
                 image = LLViewerTextureManager::getFetchedTexture(mPartSourcep->mPartSysData.mPartImageID);
+                image->setForParticle(true);
             }
             mPartSourcep->setImage(image);
         }
@@ -6290,8 +6291,7 @@ void LLViewerObject::unpackParticleSource(const S32 block_num, const LLUUID& own
         // If we've got one already, just update the existing source (or remove it)
         if (!LLViewerPartSourceScript::unpackPSS(this, mPartSourcep, block_num))
         {
-            mPartSourcep->setDead();
-            mPartSourcep = NULL;
+            deleteParticleSource();
         }
     }
     else
@@ -6321,6 +6321,7 @@ void LLViewerObject::unpackParticleSource(const S32 block_num, const LLUUID& own
             else
             {
                 image = LLViewerTextureManager::getFetchedTexture(mPartSourcep->mPartSysData.mPartImageID);
+                image->setForParticle(true);
             }
             mPartSourcep->setImage(image);
         }
@@ -6339,8 +6340,7 @@ void LLViewerObject::unpackParticleSource(LLDataPacker &dp, const LLUUID& owner_
         // If we've got one already, just update the existing source (or remove it)
         if (!LLViewerPartSourceScript::unpackPSS(this, mPartSourcep, dp, legacy))
         {
-            mPartSourcep->setDead();
-            mPartSourcep = NULL;
+            deleteParticleSource();
         }
     }
     else
@@ -6369,6 +6369,7 @@ void LLViewerObject::unpackParticleSource(LLDataPacker &dp, const LLUUID& owner_
             else
             {
                 image = LLViewerTextureManager::getFetchedTexture(mPartSourcep->mPartSysData.mPartImageID);
+                image->setForParticle(true);
             }
             mPartSourcep->setImage(image);
         }
@@ -6379,6 +6380,9 @@ void LLViewerObject::deleteParticleSource()
 {
     if (mPartSourcep.notNull())
     {
+        LLViewerTexture* image = mPartSourcep->getImage();
+        if (image)
+            image->setForParticle(false);
         mPartSourcep->setDead();
         mPartSourcep = NULL;
     }

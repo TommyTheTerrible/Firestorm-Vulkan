@@ -988,9 +988,11 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
     float assign_boost = 0;
     S32 for_anim = 0;
     S32 for_hud = 0;
-    S32 for_particle = 0;
+    S32 for_particle = (S32)imagep->forParticle();
     U32 num_faces = 0;
     U32 max_faces_to_check = 64;
+    // Add a face if texture is assigned to a particle source so texture not deleted until particle source deleted.
+    num_faces += for_particle; 
 
     LL_PROFILE_ZONE_SCOPED_CATEGORY_TEXTURE
     {
@@ -1038,6 +1040,10 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
         // Adjust assigned size based on sliding scale of importance and current discard bias.
         if (for_hud == 0 && assign_importance < (float) llmax(((LLViewerTexture::sDesiredDiscardBias - 1) * 0.20), 0))
             assign_size /= (float)llmax(pow((LLViewerTexture::sDesiredDiscardBias - 1), 4), 1);
+        if (for_particle > 0)
+        {
+            assign_size = 65536;
+        }
         // Assign size to image and find out if a fetch is necessary
         //      from mMaxVirtualSize changing or discard not correct.
         needs_fetch = (imagep->addTextureStats(assign_size) ||
