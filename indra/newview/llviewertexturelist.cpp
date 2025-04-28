@@ -1422,7 +1422,7 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
             pair.second->updateFetch();
             fetch_count++;
         }
-        if (fetch_count > update_count / 2)
+        if (fetch_count >= update_count)
             break;
     }
 
