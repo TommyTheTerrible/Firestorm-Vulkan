@@ -1049,7 +1049,7 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
         needs_fetch = (imagep->addTextureStats(assign_size) ||
             imagep->getDesiredDiscardLevel() != imagep->getDiscardLevel());
         // Store the importance with the image to use for prioritization later.
-        imagep->setMaxFaceImportance(llmin(assign_importance, 10));
+        imagep->setMaxFaceImportance(llmin(assign_importance, 9));
         imagep->processTextureStats();
     }
 

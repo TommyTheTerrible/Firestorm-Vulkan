@@ -2043,7 +2043,7 @@ bool LLViewerFetchedTexture::updateFetch()
     F32 decode_priority = mMaxVirtualSize;
     F32 importance      = getMaxFaceImportance();
 
-    decode_priority *= llclamp(importance, 0.0001, 10);
+    decode_priority *= llclamp(importance, 1, 9);
     decode_priority /= 1 + ((getFTType() == FTT_SERVER_BAKE && current_discard < 0 && importance > 0) * 4);
     if (forParticle())
         decode_priority = (4096 * 4096);
