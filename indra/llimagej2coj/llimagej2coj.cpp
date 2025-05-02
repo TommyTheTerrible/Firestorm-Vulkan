@@ -535,7 +535,7 @@ public:
                 nb_layers++;
                 s *= 4;
             }
-            nb_layers = llclamp(nb_layers, 1, 6);
+            nb_layers = llclamp(nb_layers, 1, MAX_NB_LAYERS);
 
             parameters.tcp_numlayers = nb_layers;
             parameters.tcp_rates[nb_layers - 1] = (U32)(1.f / DEFAULT_COMPRESSION_RATE); // 1:8 by default
@@ -547,7 +547,7 @@ public:
             {
                 if( i == nb_layers - 2 )
                 {
-                    multiplier = 15;
+                    multiplier = 16;
                 }
                 else if( i == nb_layers - 3 )
                 {
