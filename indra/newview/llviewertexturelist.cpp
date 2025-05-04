@@ -1363,7 +1363,7 @@ F32 LLViewerTextureList::updateBoostImagesFetchTextures(F32 max_time)
 F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_TEXTURE;
-
+    LLTimer timer;
     typedef std::vector<LLPointer<LLViewerFetchedTexture> > entries_list_t;
     entries_list_t entries;
 
@@ -1421,11 +1421,11 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
             pair.second->updateFetch();
             fetch_count++;
         }
-        if (fetch_count >= update_count)
+        if (timer.getElapsedTimeF32() > max_time || fetch_count >= update_count)
             break;
     }
 
-    return 0.f;
+    return timer.getElapsedTimeF32();
 }
 
 void LLViewerTextureList::updateImagesUpdateStats()
