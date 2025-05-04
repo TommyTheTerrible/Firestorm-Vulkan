@@ -5658,9 +5658,6 @@ void LLAppViewer::idle()
             // Handle automatic walking towards points
             gAgentPilot.updateTarget();
             gAgent.autoPilot(&yaw);
-
-            //BD - Animator
-            gDragonAnimator.update();
         }
 
         send_agent_update(false);
