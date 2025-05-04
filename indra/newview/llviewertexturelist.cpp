@@ -989,21 +989,20 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
     S32 for_anim = 0;
     S32 for_hud = 0;
     S32 for_particle = (S32)imagep->forParticle();
-    U32 num_faces = 0;
+    U32 face_count = 0;
     U32 max_faces_to_check = 64;
     // Add a face if texture is assigned to a particle source so texture not deleted until particle source deleted.
-    num_faces += for_particle; 
+    face_count += for_particle;
 
     LL_PROFILE_ZONE_SCOPED_CATEGORY_TEXTURE
     {
         for (U32 i = 0; i < LLRender::NUM_TEXTURE_CHANNELS; i++)
         {
-            num_faces += imagep->getNumFaces(i);
-            if (!check_faces || num_faces == 0 || num_faces > max_faces_to_check)
-                continue;
-            for (S32 fi = 0; fi < imagep->getNumFaces(i); )
+            face_count += imagep->getNumFaces(i);
+            S32 faces_to_check = (check_faces && face_count > max_faces_to_check) ? 0 : imagep->getNumFaces(i);
+            for (S32 fi = 0; fi < faces_to_check; fi++)
             {
-                LLFace *face       = (*(imagep->getFaceList(i)))[fi++];
+                LLFace *face       = (*(imagep->getFaceList(i)))[fi];
                 float   vsize      =  0; // some faces do not have texture entries early, but we still need to allow the texture to be fetched
                 float   importance =  0;                
                 bool    calculate  = (face && face->getTextureEntry() && face->getDrawable()); // pre-calculate bool to help branch predictions
@@ -1035,7 +1034,7 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
         assign_importance += (float) ((0.6 * (int)(for_anim > 0) * (int) in_frustum) + (10 * (int)(for_hud > 0)) + (1 * (int)(for_particle > 0)));
         // Increase importance if used for Sculpty mesh
         assign_importance += (int)imagep->isForSculptOnly();
-        if (imagep->getBoostLevel() > 0 || num_faces > max_faces_to_check)
+        if (imagep->getBoostLevel() > 0 || face_count > max_faces_to_check)
             assign_size = MAX_IMAGE_AREA;
         // Adjust assigned size based on sliding scale of importance and current discard bias.
         if (for_hud == 0 && assign_importance < (float) llmax(((LLViewerTexture::sDesiredDiscardBias - 1) * 0.20), 0))
@@ -1061,7 +1060,7 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
     // Flush formatted images using a lazy flush
     //
     // Reset texture state if found on a face or not.
-    imagep->setInactive(num_faces > 0);
+    imagep->setInactive(face_count > 0);
     S32 num_refs = imagep->getNumRefs();
     if (num_refs <= min_refs)
     {
