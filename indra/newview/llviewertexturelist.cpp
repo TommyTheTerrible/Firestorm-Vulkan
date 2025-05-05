@@ -991,6 +991,7 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
     S32 for_particle = (S32)imagep->forParticle();
     U32 face_count = 0;
     U32 max_faces_to_check = 64;
+    U32 screen_area = (gViewerWindow->getWindowWidthRaw() * gViewerWindow->getWindowHeightRaw());
     // Add a face if texture is assigned to a particle source so texture not deleted until particle source deleted.
     face_count += for_particle;
 
@@ -1011,7 +1012,8 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
                     const LLTextureEntry *te = face->getTextureEntry();
                     face->fastcalcPixelArea();
                     vsize = face->getPixelArea();
-                    importance = face->getImportanceToCamera();
+                    //importance = face->getImportanceToCamera();
+                    importance = llmax(vsize / screen_area, 0.01);
                     // Scale pixel area higher or lower depending on texture scale
                     F32 min_scale = llmin(fabsf(te->getScaleS()), fabsf(te->getScaleT()));
                     min_scale = llmax(min_scale * min_scale, 0.1f);
