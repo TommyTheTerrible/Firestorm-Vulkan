@@ -6155,7 +6155,8 @@ void LLVolumeGeometryManager::rebuildGeom(LLSpatialGroup* group)
             }
             // </FS:AO>
 
-            vobj->updateTextureVirtualSize(true);
+            if (vobj->isAvatar()) // TommyTheTerrible - Limiting texture updates to only avatars
+                vobj->updateTextureVirtualSize(true);
             vobj->preRebuild();
 
             drawablep->clearState(LLDrawable::HAS_ALPHA);
