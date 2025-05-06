@@ -2210,6 +2210,15 @@ bool LLViewerFetchedTexture::updateFetch()
 
     desired_discard = llmin(desired_discard, getMaxDiscardLevel());
 
+    // <FS:Ansariel> Replace frequently called gSavedSettings
+    static LLCachedControl<U32> sTextureDiscardLevel(gSavedSettings, "TextureDiscardLevel");
+    const U32                   override_tex_discard_level = sTextureDiscardLevel();
+    // </FS:Ansariel>
+    if (override_tex_discard_level != 0)
+    {
+        desired_discard = override_tex_discard_level;
+    }
+
     bool make_request = true;
     if (decode_priority <= 0)
     {
@@ -2304,17 +2313,6 @@ bool LLViewerFetchedTexture::updateFetch()
             h = mGLTexturep->getHeight(0);
             c = mComponents;
         }
-
-        // <FS:Ansariel> Replace frequently called gSavedSettings
-        //const U32 override_tex_discard_level = gSavedSettings.getU32("TextureDiscardLevel");
-        static LLCachedControl<U32> sTextureDiscardLevel(gSavedSettings, "TextureDiscardLevel");
-        const U32 override_tex_discard_level = sTextureDiscardLevel();
-        // </FS:Ansariel>
-        if (override_tex_discard_level != 0)
-        {
-            desired_discard = override_tex_discard_level;
-        }
-
         // bypass texturefetch directly by pulling from LLTextureCache
         S32 fetch_request_discard = -1;
         fetch_request_discard = LLAppViewer::getTextureFetch()->createRequest(mFTType, mUrl, getID(), getTargetHost(), decode_priority, w,
