@@ -2450,7 +2450,7 @@ void LLFace::fastcalcPixelArea()
     }
     else
     {
-        mImportanceToCamera = LLFace::calcImportanceToCamera(cos_angle_to_view_dir, dist);
+        fastcalcImportance();
     }
 }
 
@@ -2462,19 +2462,19 @@ void LLFace::fastcalcImportance()
     S64 window_area = (gViewerWindow->getWindowHeightRaw() * gViewerWindow->getWindowWidthRaw());
     if (vobj && vobj->mDrawable)
     {
-        LLSpatialGroup* group = vobj->mDrawable->getSpatialGroup();
-        if (group)
-        {
-            importance += (mPixelArea / window_area);
-            in_frustum = group->isVisible();
-        }
+        F32 pixel_area = mPixelArea;
+        if (vobj->getAvatar())
+            pixel_area = vobj->getAvatar()->getPixelArea();
+        else if (vobj->getSubParent())
+            pixel_area = vobj->getSubParent()->getPixelArea();
+        importance = pixel_area / window_area;
     }
     else
     {
         importance = 1.f;        
     }
 
-    mImportanceToCamera = importance * in_frustum;
+    mImportanceToCamera = importance;
 }
 
 bool LLFace::calcPixelArea(F32& cos_angle_to_view_dir, F32& radius)
