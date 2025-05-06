@@ -2779,7 +2779,9 @@ S32 LLTextureFetch::createRequest(FTType f_type, const std::string& url, const L
         // Do full requests for baked textures to reduce interim blurring.
         LL_DEBUGS(LOG_TXT) << "full request for " << id << " texture is FTT_SERVER_BAKE" << LL_ENDL;
         desired_size = MAX_IMAGE_DATA_SIZE;
-        desired_discard = 0;
+        // <3T:TommyTheTerrible> Migrating away from non-changing resolutions from baked sources 
+        //    desired_discard = 0;
+        // </3T:TommyTheTerrible>
     }
     else if (!url.empty() && (!exten.empty() && LLImageBase::getCodecFromExtension(exten) != IMG_CODEC_J2C))
     {

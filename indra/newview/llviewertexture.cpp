@@ -680,6 +680,7 @@ void LLViewerTexture::setBoostLevel(S32 level)
         mBoostLevel = level;
         if(mBoostLevel != LLViewerTexture::BOOST_NONE &&
             mBoostLevel != LLViewerTexture::BOOST_SELECTED &&
+            mBoostLevel != LLViewerTexture::BOOST_AVATAR_BAKED &&
             // <FS:minerjr> [FIRE-35081] Blurry prims not changing with graphics settings, not happening with SL Viewer
             // Added the new boost levels
             mBoostLevel != LLViewerTexture::BOOST_GRASS &&
@@ -2047,7 +2048,7 @@ bool LLViewerFetchedTexture::updateFetch()
     F32 importance      = getMaxFaceImportance();
 
     decode_priority *= llclamp(importance, 1, 9);
-    decode_priority /= 1 + ((getFTType() == FTT_SERVER_BAKE && current_discard < 0 && importance > 0) * 4);
+    //decode_priority /= 1 + ((getFTType() == FTT_SERVER_BAKE && current_discard < 0 && importance > 0) * 4);
     if (forParticle())
         decode_priority = (4096 * 4096);
     decode_priority = llmin(decode_priority, LLViewerFetchedTexture::sMaxVirtualSize);
@@ -2238,7 +2239,9 @@ bool LLViewerFetchedTexture::updateFetch()
         LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - create or missing");
         make_request = false;
     }
-    else if ((mBoostLevel > 0) && current_discard >= 0 && current_discard <= desired_discard)
+    // <3T:TommyTheTerrible> Allow Baked Avatar textures to use discards above 0. 
+    else if ((mBoostLevel > LLViewerTexture::BOOST_AVATAR_BAKED) && current_discard >= 0 &&
+             current_discard <= desired_discard)
     {
         LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - do not LOD adjust Boost");
         make_request = false;
