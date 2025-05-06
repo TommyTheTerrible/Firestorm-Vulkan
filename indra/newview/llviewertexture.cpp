@@ -2250,21 +2250,7 @@ bool LLViewerFetchedTexture::updateFetch()
         LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - do not LOD adjust Boost");
         make_request = false;
     }
-    /*
-    //else if (hasCameraChanged(5) && (!forSculpt() || importance <= 0.0f || desired_discard > 2))
-    else if (hasCameraChanged(5) && importance <= 0.0f && !forSculpt())
-    {
-        LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - Camera has moved in last 5 frames");
-        make_request = false;
-    }
-    else if (mLastTimeUpdated.getElapsedTimeF32() <
-        (llmax(gTextureList.getNumImages() / 2000, 1) + (LLViewerTexture::sDesiredDiscardBias * (1 + (current_discard < desired_discard))))
-        && LLViewerTexture::sDesiredDiscardBias < 6 && !forParticle())
-    {
-        LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - Texture was updated recently");
-        make_request = false;
-    }
-    */
+    // </3T:TommyTheTerrible>
 
     if (forSculpt() || getBoostLevel() == LLGLTexture::BOOST_SCULPTED)
     {
