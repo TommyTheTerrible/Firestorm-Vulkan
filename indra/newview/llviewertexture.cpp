@@ -696,7 +696,7 @@ void LLViewerTexture::setBoostLevel(S32 level)
     // strongly encourage anything boosted to load at full res
     if (mBoostLevel > LLViewerTexture::BOOST_HIGH)
     {
-        mMaxVirtualSize = 2048.f * 2048.f;
+        mMaxVirtualSize = MAX_IMAGE_AREA;
         /* <3T:TommyTheTerrible> This makes no sense. It's increasing the virtual size by a MIP? BOOST are always max.
         // <FS:minerjr> [FIRE-35081] Blurry prims not changing with graphics settings, not happening with SL Viewer
         // Add additional for the important to camera and in frustum
