@@ -697,6 +697,7 @@ void LLViewerTexture::setBoostLevel(S32 level)
     if (mBoostLevel > LLViewerTexture::BOOST_HIGH)
     {
         mMaxVirtualSize = 2048.f * 2048.f;
+        /* <3T:TommyTheTerrible> This makes no sense. It's increasing the virtual size by a MIP? BOOST are always max.
         // <FS:minerjr> [FIRE-35081] Blurry prims not changing with graphics settings, not happening with SL Viewer
         // Add additional for the important to camera and in frustum
         static LLCachedControl<F32> texture_camera_boost(gSavedSettings, "TextureCameraBoost", 7.f);
@@ -704,6 +705,7 @@ void LLViewerTexture::setBoostLevel(S32 level)
         // Apply second boost based upon if the texture is close to the camera (< 16.1 meters * draw distance multiplier)
         mMaxVirtualSize = mMaxVirtualSize + (mMaxVirtualSize * 1.0f * texture_camera_boost);
         // </FS:minerjr> [FIRE-35081]
+        <3T:TommyTheTerrible> */
     }
 }
 
