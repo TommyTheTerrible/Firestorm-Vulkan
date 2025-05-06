@@ -2323,11 +2323,12 @@ bool LLViewerFetchedTexture::updateFetch()
                             << " Current: " << current_discard << " Current Size: " << mGLTexturep->getWidth(current_discard) << " x "
                             << mGLTexturep->getHeight(current_discard) << " previous: " << (S32)mRequestedDiscardLevel
                             << " Desired: " << desired_discard << " mTextureState: " << (S32)mTextureState
-                            << " needsAux(): " << (S32)needsAux() << " getFTType(): " << getFTType() << " forSculpt(): " << forSculpt()
+                            << " needsAux(): " << (S32)needsAux() << " getFTType(): " << mFTType << " forSculpt(): " << forSculpt()
                             << " mForceToSaveRawImage: " << mForceToSaveRawImage << " mSavedRawDiscardLevel: " << mSavedRawDiscardLevel
                             << " mBoostLevel: " << mBoostLevel << " mMaxVirtualSize:" << (S32)mMaxVirtualSize
                             << " fetch_request_discard: " << (S32)fetch_request_discard
-                            << " sDesiredDiscardBias: " << LLViewerTexture::sDesiredDiscardBias << LL_ENDL;
+                            << " sDesiredDiscardBias: " << LLViewerTexture::sDesiredDiscardBias << " DontDiscard: " << (S32)getDontDiscard()
+                            << LL_ENDL;
         }
         mLastFetchState = fetch_request_discard;
         if (fetch_request_discard >= 0)
