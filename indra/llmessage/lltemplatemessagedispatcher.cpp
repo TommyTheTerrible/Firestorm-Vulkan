@@ -60,6 +60,7 @@ void LLTemplateMessageDispatcher::dispatch(const std::string& msg_name,
     {
         // <FS:ND> Handle invalid packets by throwing an exception and a graceful continue
         //      mTemplateMessageReader.readMessage(data.data(),host);
+        // TommyTheTerrible - Add a queue for special complex messages (NETSTUTTER)
         try
         {
             mTemplateMessageReader.readMessage(data.data(),host);

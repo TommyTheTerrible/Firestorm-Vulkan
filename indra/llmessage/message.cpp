@@ -691,6 +691,7 @@ bool LLMessageSystem::checkMessages(LockMessageChecker&, S64 frame_count )
 
                 // valid_packet = mTemplateMessageReader->readMessage(buffer, host);
 
+                // TommyTheTerrible - Add a queue for special complex messages (NETSTUTTER)
                 try { valid_packet = mTemplateMessageReader->readMessage(buffer, host); }
                 catch( nd::exceptions::xran &ex ) { LL_WARNS() << ex.what() << LL_ENDL; }
 

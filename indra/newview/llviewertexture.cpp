@@ -690,6 +690,7 @@ void LLViewerTexture::setBoostLevel(S32 level)
             mBoostLevel != LLViewerTexture::BOOST_THUMBNAIL)
         {
             setNoDelete();
+            // TommyTheTerrible - What? All textures start NoDelete. Why are we doing this?
         }
     }
 
