@@ -2235,16 +2235,6 @@ bool LLViewerFetchedTexture::updateFetch()
         LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - create or missing");
         make_request = false;
     }
-    else if (getType() == LLViewerTexture::FETCHED_TEXTURE && current_discard >= 0 && current_discard <= desired_discard)
-    {
-        LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - do not LOD adjust FETCHED_TEXTURE");
-        make_request = false;
-    }
-    else if ((getFTType() > 0 && getFTType() < 4) && current_discard >= 0 && current_discard <= desired_discard)
-    {
-        LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - do not LOD adjust FFT");
-        make_request = false;
-    }
     else if ((mBoostLevel > 0) && current_discard >= 0 && current_discard <= desired_discard)
     {
         LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - do not LOD adjust Boost");
