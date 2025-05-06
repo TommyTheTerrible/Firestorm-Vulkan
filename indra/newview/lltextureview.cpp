@@ -210,7 +210,7 @@ void LLTextureBar::draw()
         mImagep->mMaxFaceImportance,
         mImagep->mFTType,
         mImagep->mBoostLevel,
-        boost_space,
+        boost_space.c_str(),
         mImagep->mForSculpt,
         mImagep->mForHUD,
         mImagep->mForParticle
