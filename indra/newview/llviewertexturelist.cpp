@@ -989,6 +989,7 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
     S32 for_anim = 0;
     S32 for_hud = 0;
     S32 for_particle = (S32)imagep->forParticle();
+    bool for_avatar = (imagep->getBoostLevel() == LLGLTexture::BOOST_AVATAR_BAKED);
     U32 face_count = 0;
     U32 max_faces_to_check = 64;
     U32 screen_area = (gViewerWindow->getWindowWidthRaw() * gViewerWindow->getWindowHeightRaw());
@@ -1012,8 +1013,7 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
                     const LLTextureEntry *te = face->getTextureEntry();
                     face->fastcalcPixelArea();
                     vsize = face->getPixelArea();
-                    //importance = face->getImportanceToCamera();
-                    importance = llmax(vsize / screen_area, 0.01);
+                    importance = face->getImportanceToCamera();
                     // Scale pixel area higher or lower depending on texture scale
                     F32 min_scale = llmin(fabsf(te->getScaleS()), fabsf(te->getScaleT()));
                     min_scale = llmax(min_scale * min_scale, 0.1f);
@@ -1023,7 +1023,7 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
                     for_particle += face->isState(LLFace::PARTICLE);
                 }
                 assign_size = llmax(assign_size, vsize);
-                assign_importance += importance;
+                assign_importance = (for_avatar) ? llmax(assign_importance, importance) : assign_importance + importance;
             }
         }
     }
@@ -1036,7 +1036,7 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
         assign_importance += (float) ((0.6 * (int)(for_anim > 0) * (int) in_frustum) + (10 * (int)(for_hud > 0)) + (1 * (int)(for_particle > 0)));
         // Increase importance if used for Sculpty mesh
         assign_importance += (int)imagep->isForSculptOnly();
-        if (imagep->getBoostLevel() > 0 || face_count > max_faces_to_check)
+        if (imagep->getBoostLevel() > LLGLTexture::BOOST_AVATAR_BAKED || face_count > max_faces_to_check)
             assign_size = MAX_IMAGE_AREA;
         // Adjust assigned size based on sliding scale of importance and current discard bias.
         if (for_hud == 0 && assign_importance < (float) llmax(((LLViewerTexture::sDesiredDiscardBias - 1) * 0.20), 0))
