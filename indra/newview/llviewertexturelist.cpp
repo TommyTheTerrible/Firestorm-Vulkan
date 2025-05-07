@@ -1336,9 +1336,10 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
 
     LLPointer<LLViewerFetchedTexture> last_imagep;
 
-    for (auto& imagep : entries)
+    for (auto imagep : entries)
     {
-        updateImageDecodePriority(imagep);
+        if (updateImageDecodePriority(imagep))
+            mFetchingTextures.insert(imagep);
         last_imagep = imagep;
     }
 
@@ -1347,9 +1348,15 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
         mLastUpdateKey = LLTextureKey(last_imagep->getID(), (ETexListType)last_imagep->getTextureListType());
     }
 
-    for (auto pair = mUUIDMap.begin(); pair != mUUIDMap.end() && timer.getElapsedTimeF32() < max_time; ++pair)
+    auto fetch_iter = mFetchingTextures.begin();
+    while (!mFetchingTextures.empty() && fetch_iter != mFetchingTextures.end() && timer.getElapsedTimeF32() < max_time)
     {
-        pair->second->updateFetch();
+        LLViewerFetchedTexture* texture = *fetch_iter;
+        if (texture)
+        {
+            bool still_fetching = texture->updateFetch();
+        }
+        fetch_iter++;
     }
 
     return timer.getElapsedTimeF32();

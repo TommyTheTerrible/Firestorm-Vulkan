@@ -702,7 +702,7 @@ void LLGLTexMemBar::draw()
     LLFontGL::getFontMonospace()->renderUTF8(text, 0, 0, v_offset + line_height*5,
                                              text_color, LLFontGL::LEFT, LLFontGL::TOP);
 
-    text = llformat("CacheHitRate: %3.2f Read: %d/%d/%d Decode: %d/%d/%d Fetch: %d/%d/%d",
+    text = llformat("CacheHitRate: %3.2f Read: %d/%d/%d Decode: %d/%d/%d Fetch: %d/%d/%d Fetching: %d",
                     cacheHitRate,
                     cacheReadLatMin,
                     cacheReadLatMed,
@@ -712,7 +712,8 @@ void LLGLTexMemBar::draw()
                     texDecodeLatMax,
                     texFetchLatMin,
                     texFetchLatMed,
-                    texFetchLatMax);
+                    texFetchLatMax,
+                    (U32)gTextureList.mFetchingTextures.size());
 
     LLFontGL::getFontMonospace()->renderUTF8(text, 0, 0, v_offset + line_height*4,
                                              text_color, LLFontGL::LEFT, LLFontGL::TOP);

@@ -2344,9 +2344,13 @@ bool LLViewerFetchedTexture::updateFetch()
             LLAppViewer::getTextureFetch()->deleteRequest(getID(), true);
             mHasFetcher = false;
             mLastTimeUpdated.reset();
-            //gTextureList.unmarkTexture(this); 
         }
     }
+
+    if (mIsFetching)
+        gTextureList.mFetchingTextures.insert(this);
+    else if (!mHasFetcher)
+        gTextureList.mFetchingTextures.erase(this);
 
     return mIsFetching;
 }

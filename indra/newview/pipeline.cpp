@@ -2982,7 +2982,8 @@ void LLPipeline::processMarkedTextures(F32 max_dtime)
             {
                 if (gTextureList.updateImageDecodePriority(fetched_texture) && fetched_texture->isActive())
                 {
-                    fetched_texture->updateFetch();
+                    if (fetched_texture->updateFetch())
+                        gTextureList.mFetchingTextures.insert(fetched_texture);
                 }
             }
         }

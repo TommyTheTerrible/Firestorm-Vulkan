@@ -249,6 +249,7 @@ public:
     bool mForceResetTextureStats;
 
     std::unordered_set<LLPointer<LLViewerTexture>, vigna_hash> mMarkedTextures;
+    std::unordered_set<LLPointer<LLViewerFetchedTexture>, vigna_hash> mFetchingTextures;
 
     // to make "for (auto& imagep : gTextureList)" work
     const image_list_t::const_iterator begin() const { return mImageList.cbegin(); }
