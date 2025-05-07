@@ -1354,7 +1354,7 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
         LLViewerFetchedTexture* texture = *fetch_iter;
         if (texture)
         {
-            bool still_fetching = texture->updateFetch();
+            texture->updateFetch();
         }
         fetch_iter++;
     }
