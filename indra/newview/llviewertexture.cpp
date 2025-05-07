@@ -2247,6 +2247,14 @@ bool LLViewerFetchedTexture::updateFetch()
         make_request = false;
     }
     // </3T:TommyTheTerrible>
+    // <3T:TommyTheTerrible> Stop unnecessary requests when already at desired discard. 
+    else if ((mBoostLevel <= LLViewerTexture::BOOST_AVATAR_BAKED) && current_discard >= 0 &&
+             current_discard == desired_discard)
+    {
+        LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - Do not Send Requests if current and desired equal");
+        make_request = false;
+    }
+    // </3T:TommyTheTerrible>
 
     if (forSculpt() || getBoostLevel() == LLGLTexture::BOOST_SCULPTED)
     {
