@@ -2023,6 +2023,9 @@ bool LLViewerFetchedTexture::updateFetch()
     {
         LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - missing asset");
         llassert(!mHasFetcher);
+        // <3T:TommyTheTerrible> Remove from Fetching texture list if missing.
+        gTextureList.mFetchingTextures.erase(this);
+        // </3T:TommyTheTerrible>
         return false; // skip
     }
     if (!mLoadedCallbackList.empty() && mRawImage.notNull())
