@@ -2377,6 +2377,9 @@ void LLFace::fastcalcPixelArea()
     LLVector4a center;
     LLVector4a size;
 
+    // <3T:TommyTheTerrible> Moved camera to top so can be used for HUD faces
+    LLViewerCamera* camera = LLViewerCamera::getInstance();
+    // </3T:TommyTheTerrible>
     if (isState(LLFace::RIGGED))
     {
         // override with avatar bounding box
@@ -2386,20 +2389,32 @@ void LLFace::fastcalcPixelArea()
             center.load3(avatar->getPositionAgent().mV);
             const LLVector4a* exts = avatar->mDrawable->getSpatialExtents();
             size.setSub(exts[1], exts[0]);
+            // <3T:TommyTheTerrible> Using Avatar's extents can increase size of textures immensely, so reducing by a MIP (1/4th)
+            size.mul(0.25f);
         }
         else
         {
             return;
         }
     }
+    // <3T:TommyTheTerrible> Use camera's origin for HUD so distance is 0 (brought up to 0.125 later)
+    else if (isState(LLFace::HUD_RENDER))
+    {
+        center.load3(camera->mOrigin.mV);
+        size.setSub(mExtents[1], mExtents[0]);
+    }
+    // </3T:TommyTheTerrible>
     else
     {
         center.load3(getPositionAgent().mV);
         size.setSub(mExtents[1], mExtents[0]);
     }
-    size.mul(0.5f);
-
-    LLViewerCamera* camera = LLViewerCamera::getInstance();
+    // <3T:TommyTheTerrible> No idea why we're halving the size for everything.
+    //size.mul(0.5f);
+    // // </3T:TommyTheTerrible>
+    // <3T:TommyTheTerrible> Moved camera to top so can be used for HUD faces
+    //LLViewerCamera* camera = LLViewerCamera::getInstance();
+    // </3T:TommyTheTerrible>
 
     F32        size_squared = size.dot3(size).getF32();
     LLVector4a lookAt;
@@ -2408,7 +2423,8 @@ void LLFace::fastcalcPixelArea()
     lookAt.setSub(center, t);
 
     F32 dist = lookAt.getLength3().getF32();
-    dist     = llmax(dist - size.getLength3().getF32(), 0.001f);
+    // <3T:TommyTheTerrible> Set distance to a minimum of 1/4th so that close textures are only increased a MIP
+    dist     = llmax(dist - size.getLength3().getF32(), 0.25f);
 
     lookAt.normalize3fast();
 
