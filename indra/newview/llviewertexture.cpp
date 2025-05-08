@@ -2024,6 +2024,7 @@ bool LLViewerFetchedTexture::updateFetch()
         LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - missing asset");
         llassert(!mHasFetcher);
         // <3T:TommyTheTerrible> Remove from Fetching texture list if missing.
+        LLViewerFetchedTexture& unref = *this; // Need to do this to reduce the references on the texture.
         gTextureList.mFetchingTextures.erase(this);
         // </3T:TommyTheTerrible>
         return false; // skip
@@ -2361,7 +2362,10 @@ bool LLViewerFetchedTexture::updateFetch()
     if (mIsFetching)
         gTextureList.mFetchingTextures.insert(this);
     else if (!mHasFetcher)
+    {
+        LLViewerFetchedTexture& unref = *this; // Need to do this to reduce the references on the texture.
         gTextureList.mFetchingTextures.erase(this);
+    }
 
     return mIsFetching;
 }
