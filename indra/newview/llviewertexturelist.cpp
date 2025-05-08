@@ -1023,7 +1023,11 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
                     for_particle += face->isState(LLFace::PARTICLE);
                 }
                 assign_size = llmax(assign_size, vsize);
-                assign_importance = (for_avatar) ? llmax(assign_importance, importance) : assign_importance + importance;
+                assign_importance += importance;
+                // <3T:TommyTheTerrible> All of the face checks for baked avatar textures return the same values
+                //      and we only want importance tallied once per avatar.
+                if (calculate && for_avatar)
+                    break; 
             }
         }
     }
@@ -1031,16 +1035,17 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
     {
         bool in_frustum = (assign_importance > 0);
         // If texture is used for an animation, increase it's size
-        assign_size *= (float) llmax(pow((int)(for_anim > 0 && in_frustum) * 2, 4), 1);
+        assign_size *= (float) llmax(pow(4, (int)(for_anim > 0 && in_frustum) * 2), 1);
         // Increase importance if used in an animation in frustum, a HUD or a particle.
         assign_importance += (float) ((0.6 * (int)(for_anim > 0) * (int) in_frustum) + (10 * (int)(for_hud > 0)) + (1 * (int)(for_particle > 0)));
         // Increase importance if used for Sculpty mesh
         assign_importance += (int)imagep->isForSculptOnly();
+        assign_importance = llmin(assign_importance, 1); // Nothing is more important than 1.
         if (imagep->getBoostLevel() > LLGLTexture::BOOST_AVATAR_BAKED || face_count > max_faces_to_check)
             assign_size = MAX_IMAGE_AREA;
         // Adjust assigned size based on sliding scale of importance and current discard bias.
         if (for_hud == 0 && assign_importance < (float) llmax(((LLViewerTexture::sDesiredDiscardBias - 1) * 0.20), 0))
-            assign_size /= (float)llmax(pow((LLViewerTexture::sDesiredDiscardBias - 1), 4), 1);
+            assign_size /= (float)llmax(pow(4, (LLViewerTexture::sDesiredDiscardBias - 1)), 1);
         if (for_particle > 0)
         {
             assign_size = 65536;
@@ -1050,7 +1055,7 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
         needs_fetch = (imagep->addTextureStats(assign_size) ||
             imagep->getDesiredDiscardLevel() != imagep->getDiscardLevel());
         // Store the importance with the image to use for prioritization later.
-        imagep->setMaxFaceImportance(llmin(assign_importance, 9));
+        imagep->setMaxFaceImportance(assign_importance);
         imagep->processTextureStats();
     }
 
