@@ -1354,10 +1354,9 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
         mLastUpdateKey = LLTextureKey(last_imagep->getID(), (ETexListType)last_imagep->getTextureListType());
     }
 
-    S32 max_threads = 1024; //<3T:TommyTheTerrible> LLThreadSafeQueue set to 1024 capacity and can be reached with fast computer.
     for (auto texture : mFetchingTextures)
     {
-        if (timer.getElapsedTimeF32() > max_time || (S32)LLAppViewer::getImageDecodeThread()->getPending() > max_threads)
+        if (timer.getElapsedTimeF32() > max_time)
             break;
 
         if (texture)
