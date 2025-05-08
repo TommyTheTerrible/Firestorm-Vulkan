@@ -1323,8 +1323,9 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
             // <FS:minerjr> [FIRE-35081] Blurry prims not changing with graphics settings, not happening with SL Viewer
             //if (iter->second->getGLTexture())
             // Can skip processing TEX_LIST_SCALED as they are UI elements and should not be discarded
-            if (iter->second->getGLTexture() && get_element_type(iter->second->getBoostLevel()) == TEX_LIST_STANDARD)
+            //if (iter->second->getGLTexture() && get_element_type(iter->second->getBoostLevel()) == TEX_LIST_STANDARD)
             // </FS:minerjr> [FIRE-35081]
+            if (iter->second->getGLTexture())
             {
                     entries.push_back(iter->second);
             }
@@ -1336,10 +1337,10 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
 
     LLPointer<LLViewerFetchedTexture> last_imagep;
 
-    for (auto imagep : entries)
+    for (auto& imagep : entries)
     {
         if (updateImageDecodePriority(imagep))
-            mFetchingTextures.insert(imagep);
+            imagep->updateFetch();
         last_imagep = imagep;
     }
 
@@ -1348,15 +1349,16 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
         mLastUpdateKey = LLTextureKey(last_imagep->getID(), (ETexListType)last_imagep->getTextureListType());
     }
 
-    auto fetch_iter = mFetchingTextures.begin();
-    while (!mFetchingTextures.empty() && fetch_iter != mFetchingTextures.end() && timer.getElapsedTimeF32() < max_time)
+    S32 max_threads = 1024; //<3T:TommyTheTerrible> LLThreadSafeQueue set to 1024 capacity and can be reached with fast computer.
+    for (auto texture : mFetchingTextures)
     {
-        LLViewerFetchedTexture* texture = *fetch_iter;
+        if (timer.getElapsedTimeF32() > max_time || (S32)LLAppViewer::getImageDecodeThread()->getPending() > max_threads)
+            break;
+
         if (texture)
         {
             texture->updateFetch();
         }
-        fetch_iter++;
     }
 
     return timer.getElapsedTimeF32();
