@@ -573,6 +573,7 @@ public:
     static F32 sMaxVirtualSize; //maximum possible value of mMaxVirtualSize
     static LLPointer<LLViewerFetchedTexture> sMissingAssetImagep;   // Texture to show for an image asset that is not in the database
     static LLPointer<LLViewerFetchedTexture> sWhiteImagep;  // Texture to show NOTHING (whiteness)
+    static LLPointer<LLViewerFetchedTexture> sInvisibleImagep; // Texture with 100% alpha (invisible)
     static LLPointer<LLViewerFetchedTexture> sDefaultImagep; // "Default" texture for error cases, the only case of fetched texture which is generated in local.
     static LLPointer<LLViewerFetchedTexture> sFlatNormalImagep; // Flat normal map denoting no bumpiness on a surface
     static LLPointer<LLViewerFetchedTexture> sDefaultIrradiancePBRp; // PBR: irradiance
