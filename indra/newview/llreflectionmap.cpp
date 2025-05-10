@@ -317,8 +317,9 @@ void LLReflectionMap::doOcclusion(const LLVector4a& eye)
     {
         return;
     }
-
-#if 1
+    //<3T:TommyTheTerrible> Disabling this OpenGL Culling method since it doesn't seem to do anything but reduce FPS
+#if 0
+    //</3T:TommyTheTerrible>
     // super sloppy, but we're doing an occlusion cull against a bounding cube of
     // a bounding sphere, pad radius so we assume if the eye is within
     // the bounding sphere of the bounding cube, the node is not culled
