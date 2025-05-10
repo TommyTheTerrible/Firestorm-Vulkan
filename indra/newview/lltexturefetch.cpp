@@ -1950,7 +1950,7 @@ bool LLTextureFetchWorker::doWork(S32 param)
             return true;
         }
         // <3T:TommyTheTerrible> Do not send a request if decode queue is near the 1024 limit.
-        if ((S32)LLAppViewer::getImageDecodeThread()->getPending() + 1 >= 1024)
+        if ((S32)LLAppViewer::getImageDecodeThread()->getPending() + ((S32)LLAppViewer::getImageDecodeThread()->getThreadCount() * 2) >= 1024)
         {
             // No room in decode queue, wait in state for opening. LLThreadSafeQueue default is 1024.
             LL_DEBUGS_ONCE(LOG_TXT) << mID << " DECODE_IMAGE wait: Decode queue full!" << LL_ENDL;
