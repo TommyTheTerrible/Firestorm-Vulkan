@@ -6407,7 +6407,8 @@ bool LLVOAvatar::allTexturesCompletelyDownloaded(std::set<LLUUID>& ids) const
     for (std::set<LLUUID>::const_iterator it = ids.begin(); it != ids.end(); ++it)
     {
         LLViewerFetchedTexture *imagep = gTextureList.findImage(*it, TEX_LIST_STANDARD);
-        if (imagep && !imagep->isMissingAsset() && imagep->getDiscardLevel() < 0) // <3T:TommyTheTerrible> Let the texture pass if it's been decoded.
+        if (imagep && !imagep->isMissingAsset() && imagep->getDiscardLevel() < 0 &&
+            imagep != LLViewerFetchedTexture::sInvisibleImagep) // <3T:TommyTheTerrible> Let the texture pass if it's been decoded.
         {
             if (imagep->getMaxVirtualSize() < MIN_IMAGE_AREA)
                 imagep->addTextureStats(MIN_IMAGE_AREA);
