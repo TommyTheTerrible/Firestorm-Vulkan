@@ -1915,6 +1915,13 @@ bool LLTextureFetchWorker::doWork(S32 param)
         LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("tfwdw - DECODE_IMAGE"); //<FS:Beq/> fix incorrect category
         static LLCachedControl<bool> textures_decode_disabled(gSavedSettings, "TextureDecodeDisabled", false);
 
+        // <3T:TommyTheTerrible> Do not send a request if decode queue is near the 1024 limit. 
+        if ((S32)LLAppViewer::getImageDecodeThread()->getPending() >= 1024)
+        {
+            // No room in decode queue, wait in state for opening. LLThreadSafeQueue default is 1024.
+            return false;
+        }
+        // </3T:TommyTheTerrible>)
 
         if (textures_decode_disabled)
         {
@@ -1949,15 +1956,6 @@ bool LLTextureFetchWorker::doWork(S32 param)
             LL_DEBUGS(LOG_TXT) << mID << " DECODE_IMAGE abort: mLoadedDiscard < 0" << LL_ENDL;
             return true;
         }
-        // <3T:TommyTheTerrible> Do not send a request if decode queue is near the 1024 limit.
-        if ((S32)LLAppViewer::getImageDecodeThread()->getPending() >= 1024)
-        {
-            // No room in decode queue, wait in state for opening. LLThreadSafeQueue default is 1024.
-            LL_DEBUGS(LOG_TXT) << mID << " DECODE_IMAGE wait: Decode queue full!" << LL_ENDL;
-            return false;
-        }
-        // </3T:TommyTheTerrible>
-
         mDecodeTimer.reset();
         mRawImage = NULL;
         mAuxImage = NULL;
