@@ -83,6 +83,13 @@ size_t LLImageDecodeThread::update(F32 max_time_ms)
     return getPending();
 }
 
+// <3T:TommyTheTerrible> Get maximum thread count of image decode thread pool.
+size_t LLImageDecodeThread::getThreadCount()
+{
+    return mThreadPool->getThreadCount();
+};
+// </3T:TommyTheTerrible>
+
 size_t LLImageDecodeThread::getPending()
 {
     return mThreadPool->getQueue().size();

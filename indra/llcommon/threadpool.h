@@ -85,6 +85,10 @@ namespace LL
         static
         size_t getWidth(const std::string& name, size_t dft);
 
+        // <3T:TommyTheTerrible> Get maximum thread count of thread pool.
+        size_t getThreadCount() { return mThreadCount; };
+        // </3T:TommyTheTerrible>
+
     protected:
         std::unique_ptr<WorkQueueBase> mQueue;
         std::vector<std::pair<std::string, std::thread>> mThreads;

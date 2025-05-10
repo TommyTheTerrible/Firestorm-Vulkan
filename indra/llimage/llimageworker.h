@@ -53,6 +53,7 @@ public:
                          const LLPointer<Responder>& responder);
     size_t getPending();
     size_t update(F32 max_time_ms);
+    size_t getThreadCount(); // <3T:TommyTheTerrible> Get maximum thread count of image decode queue.
     S32 getTotalDecodeCount() { return mDecodeCount; }
     void shutdown();
 
