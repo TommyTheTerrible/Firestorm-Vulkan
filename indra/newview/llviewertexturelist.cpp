@@ -985,6 +985,14 @@ void LLViewerTextureList::clearFetchingRequests()
 
 extern bool gCubeSnapshot;
 
+float smootherstep(float edge0, float edge1, float x)
+{
+    // Scale, and clamp x to 0..1 range
+    x = std::clamp((x - edge0) / (edge1 - edge0), 0.f, 1.f);
+
+    return x * x * x * (x * (6.0f * x - 15.0f) + 10.0f);
+}
+
 bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imagep, bool check_faces)
 {
 
@@ -1031,7 +1039,7 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
                     for_particle += face->isState(LLFace::PARTICLE);
                 }
                 assign_size = llmax(assign_size, vsize);
-                assign_importance += importance;
+                assign_importance = llmax(assign_importance, importance);
                 // <3T:TommyTheTerrible> All of the face checks for baked avatar textures return the same values
                 //      and we only want importance tallied once per avatar.
                 if (calculate && for_avatar)
@@ -1052,8 +1060,12 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
         if (imagep->getBoostLevel() > LLGLTexture::BOOST_AVATAR_BAKED || face_count > max_faces_to_check)
             assign_size = MAX_IMAGE_AREA;
         // Adjust assigned size based on sliding scale of importance and current discard bias.
-        if (for_hud == 0 && assign_importance < (float) llmax(((LLViewerTexture::sDesiredDiscardBias - 1) * 0.20), 0))
-            assign_size /= (float)llmax(pow(4, (LLViewerTexture::sDesiredDiscardBias - 1)), 1);
+        if (for_hud == 0)
+            assign_size /= (float)llmax(
+                (float)pow(4,
+                    LLViewerTexture::sDesiredDiscardBias -
+                    smootherstep(1, LLViewerTexture::sDesiredDiscardBias, 1 - assign_importance)
+                ), 1);
         if (for_particle > 0)
         {
             assign_size = 65536;
