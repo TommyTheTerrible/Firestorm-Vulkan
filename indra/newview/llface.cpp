@@ -2473,17 +2473,21 @@ void LLFace::fastcalcPixelArea()
 void LLFace::fastcalcImportance()
 {
     LLViewerObject* vobj = getViewerObject();
-    bool in_frustum = true;
+    bool in_frustum = false;
     F32 importance = 0;
     S64 window_area = (gViewerWindow->getWindowHeightRaw() * gViewerWindow->getWindowWidthRaw());
     if (vobj && vobj->mDrawable)
     {
         F32 pixel_area = mPixelArea;
         if (vobj->getAvatar())
-            pixel_area = vobj->getAvatar()->getPixelArea();
-        else if (vobj->getSubParent())
-            pixel_area = vobj->getSubParent()->getPixelArea();
-        importance = pixel_area / window_area;
+        {
+            in_frustum = vobj->getAvatar()->isVisible();
+        }
+        else if (vobj->mDrawable->getSpatialGroup())
+        {
+            in_frustum = vobj->mDrawable->getSpatialGroup()->isVisible();
+        }
+        importance = (pixel_area / window_area) * (LLViewerTexture::sDesiredDiscardBias < 3 || in_frustum);
     }
     else
     {
