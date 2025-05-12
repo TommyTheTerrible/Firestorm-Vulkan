@@ -1057,15 +1057,15 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
         // Increase importance if used for Sculpty mesh
         assign_importance += (int)imagep->isForSculptOnly();
         assign_importance = llmin(assign_importance, 1); // Nothing is more important than 1.
-        if (imagep->getBoostLevel() > LLGLTexture::BOOST_AVATAR_BAKED || face_count > max_faces_to_check)
-            assign_size = MAX_IMAGE_AREA;
         // Adjust assigned size based on sliding scale of importance and current discard bias.
         if (for_hud == 0)
             assign_size /= (float)llmax(
                 (float)pow(4,
                     LLViewerTexture::sDesiredDiscardBias -
-                    smootherstep(1, LLViewerTexture::sDesiredDiscardBias, 1 - assign_importance)
+                    smootherstep(0, LLViewerTexture::sDesiredDiscardBias, assign_importance)
                 ), 1);
+        if (imagep->getBoostLevel() > LLGLTexture::BOOST_AVATAR_BAKED || face_count > max_faces_to_check)
+            assign_size = MAX_IMAGE_AREA;
         if (for_particle > 0)
         {
             assign_size = 65536;
