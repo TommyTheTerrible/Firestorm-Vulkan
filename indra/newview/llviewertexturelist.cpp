@@ -1373,13 +1373,15 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
     {
         mLastUpdateKey = LLTextureKey(last_imagep->getID(), (ETexListType)last_imagep->getTextureListType());
     }
-
-    S32 decodes_available = llmax((512 - (S32)LLAppViewer::getImageDecodeThread()->getPending())/2, 0);
+    S32 decodes_available = llmax((S32)LLAppViewer::getImageDecodeThread()->getThreadCount() * 4, update_count);
+    
     S32 fetch_count  = 0;
 
     for (auto texture : mFetchingTextures)
     {
-        if (timer.getElapsedTimeF32() > max_time || fetch_count + 1 > decodes_available)
+        if (timer.getElapsedTimeF32() > max_time ||
+            fetch_count + 1 > decodes_available ||
+            LLAppViewer::getImageDecodeThread()->getPending() > 128)
             break;
 
         if (texture)
