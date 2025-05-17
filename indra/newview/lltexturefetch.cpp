@@ -1948,6 +1948,17 @@ bool LLTextureFetchWorker::doWork(S32 param)
             LL_DEBUGS(LOG_TXT) << mID << " DECODE_IMAGE abort: mLoadedDiscard < 0" << LL_ENDL;
             return true;
         }
+
+        // <3T:TommyTheTerrible> Stop sending requests if Decode threadpool nearly fully
+        // (LLThreadPool for Decode has 1024 capacity which we reduce by twice the number of threads)
+        if (gTextureList.aDecodingCount >= 1024 - ((S32)LLAppViewer::getImageDecodeThread()->getThreadCount() * 2))
+        {
+            LL_WARNS_ONCE() << "Decode queue nearly full!" << LL_ENDL;
+            return false;
+        }        
+
+        gTextureList.aDecodingCount++;
+        //</3T:TommyTheTerrible>
         mDecodeTimer.reset();
         mRawImage = NULL;
         mAuxImage = NULL;
@@ -1986,6 +1997,7 @@ bool LLTextureFetchWorker::doWork(S32 param)
         {
             mDecodeTime = mDecodeTimer.getElapsedTimeF32();
 
+            gTextureList.aDecodingCount--; // <3T:TommyTheTerrible> Decrement atomic count of decodes submitted
             if (mDecodedDiscard < 0)
             {
                 if (mCachedSize > 0 && !mInLocalCache && mRetryAttempt == 0)
