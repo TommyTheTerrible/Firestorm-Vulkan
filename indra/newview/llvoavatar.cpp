@@ -7046,6 +7046,9 @@ void LLVOAvatar::processAnimationStateChanges()
 //-----------------------------------------------------------------------------
 bool LLVOAvatar::processSingleAnimationStateChange( const LLUUID& anim_id, bool start )
 {
+    if (anim_id.isNull())
+        return false;
+
     // SL-402, SL-427 - we need to update body size often enough to
     // keep appearances in sync, but not so often that animations
     // cause constant jiggling of the body or camera. Possible

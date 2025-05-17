@@ -404,6 +404,9 @@ LLMotion* LLMotionController::createMotion( const LLUUID &id )
 //-----------------------------------------------------------------------------
 bool LLMotionController::startMotion(const LLUUID &id, F32 start_offset)
 {
+    if (id.isNull())
+        return false;
+
     // do we have an instance of this motion for this character?
     LLMotion *motion = findMotion(id);
 
