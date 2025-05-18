@@ -1375,7 +1375,6 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
         mLastUpdateKey = LLTextureKey(last_imagep->getID(), (ETexListType)last_imagep->getTextureListType());
     }
 
-#   pragma omp single
     for (auto texture : mFetchingTextures)
     {
         if (timer.getElapsedTimeF32() > max_time)
