@@ -1953,7 +1953,7 @@ bool LLTextureFetchWorker::doWork(S32 param)
         // (LLThreadPool for Decode has 1024 capacity which we reduce by twice the number of threads)
         if (gTextureList.aDecodingCount >= 1024 - ((S32)LLAppViewer::getImageDecodeThread()->getThreadCount() * 2))
         {
-            LL_WARNS_ONCE() << "Decode queue nearly full!" << LL_ENDL;
+            //LL_WARNS_ONCE() << "Decode queue nearly full!" << LL_ENDL;
             return false;
         }        
 

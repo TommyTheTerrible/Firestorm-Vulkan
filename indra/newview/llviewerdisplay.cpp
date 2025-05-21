@@ -1269,24 +1269,6 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
             << " mtext: " << (S32)gTextureList.mMarkedTextures.size()
             << " mdraw: " << (S32)gPipeline.mMarkedDrawables.size()
             << LL_ENDL;
-        if (!gTextureList.mFetchingTextures.empty() && gTextureList.mFetchingTextures.size() < 20)
-        {
-            LL_WARNS() << "<mFetchingTextures>" << LL_ENDL;
-            for (auto texture : gTextureList.mFetchingTextures)
-            {
-                if (texture)
-                {
-                    LL_WARNS() << "Good Texture: " << texture->getID()
-                               << " " << texture->getFullWidth() << "x" << texture->getFullHeight()
-                               << " FTT: " << texture->getFTType() << " BOOST:" << texture->getBoostLevel()
-                               << " Missing: " << texture->isMissingAsset()
-                               << LL_ENDL;
-                }
-                else
-                    LL_WARNS() << "Bad Texture!" << LL_ENDL;
-            }
-            LL_WARNS() << "</mFetchingTextures>" << LL_ENDL;
-        }
     }    
 }
 

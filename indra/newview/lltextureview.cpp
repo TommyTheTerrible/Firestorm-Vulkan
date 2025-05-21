@@ -702,7 +702,7 @@ void LLGLTexMemBar::draw()
     LLFontGL::getFontMonospace()->renderUTF8(text, 0, 0, v_offset + line_height*5,
                                              text_color, LLFontGL::LEFT, LLFontGL::TOP);
 
-    text = llformat("CacheHitRate: %3.2f Read: %d/%d/%d Decode: %d/%d/%d Fetch: %d/%d/%d Fetching: %d Decoding: %d",
+    text = llformat("CacheHitRate: %3.2f Read: %d/%d/%d Decode: %d/%d/%d Decoding: %d Fetch: %d/%d/%d",
                     cacheHitRate,
                     cacheReadLatMin,
                     cacheReadLatMed,
@@ -710,11 +710,10 @@ void LLGLTexMemBar::draw()
                     texDecodeLatMin,
                     texDecodeLatMed,
                     texDecodeLatMax,
+                    (S32)LLAppViewer::getImageDecodeThread()->getPending(),
                     texFetchLatMin,
                     texFetchLatMed,
-                    texFetchLatMax,
-                    (U32)gTextureList.mFetchingTextures.size(),
-                    (S32)LLAppViewer::getImageDecodeThread()->getPending());
+                    texFetchLatMax);
 
     LLFontGL::getFontMonospace()->renderUTF8(text, 0, 0, v_offset + line_height*4,
                                              text_color, LLFontGL::LEFT, LLFontGL::TOP);
@@ -727,7 +726,7 @@ void LLGLTexMemBar::draw()
     // </FS:Ansariel>
 	// <FS:minerjr> Fixed up the missing variables and converted 64bit size_t's to S32's to allow proper numbers to appear
                     gTextureList.getNumImages(),
-                    LLAppViewer::getTextureFetch()->getNumRequests(), LLAppViewer::getTextureFetch()->getNumDeletes(),
+                    (S32)gTextureList.mFetchingTextures.size(), LLAppViewer::getTextureFetch()->getNumDeletes(),
                     LLAppViewer::getTextureFetch()->mPacketCount, LLAppViewer::getTextureFetch()->mBadPacketCount,
                     LLAppViewer::getTextureCache()->getNumReads(), LLAppViewer::getTextureCache()->getNumWrites(),
                     (S32)LLLFSThread::sLocal->getPending(),
