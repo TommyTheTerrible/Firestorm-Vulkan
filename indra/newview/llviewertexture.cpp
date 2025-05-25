@@ -2258,6 +2258,10 @@ bool LLViewerFetchedTexture::updateFetch()
         make_request = false;
     }
     // </3T:TommyTheTerrible>
+    else if (gTextureList.aDecodingCount >= 512 || LLAppViewer::instance()->getImageDecodeThread()->getPending() >= 512)
+    {
+        make_request = false;
+    }
 
     if (forSculpt() || getBoostLevel() == LLGLTexture::BOOST_SCULPTED)
     {
