@@ -1374,10 +1374,10 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
     {
         mLastUpdateKey = LLTextureKey(last_imagep->getID(), (ETexListType)last_imagep->getTextureListType());
     }
-    std::atomic<int> decodes_available = 1024 - (int)LLAppViewer::getImageDecodeThread()->getPending() - 1;
+    std::atomic<int> decodes_available = 512;
     for (auto texture : mFetchingTextures)
     {
-        if (timer.getElapsedTimeF32() > max_time || decodes_available <= 1)
+        if (timer.getElapsedTimeF32() > max_time || (decodes_available - gTextureList.aDecodingCount) <= 1)
             break;
 
         if (texture)
