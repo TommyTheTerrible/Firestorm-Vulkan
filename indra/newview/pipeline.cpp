@@ -1192,7 +1192,7 @@ void LLPipeline::refreshCachedSettings()
     RenderShadowSplits = gSavedSettings.getS32("RenderShadowSplits");
     RenderDeferredSSAO = gSavedSettings.getBOOL("RenderDeferredSSAO");
     RenderShadowResolutionScale = gSavedSettings.getF32("RenderShadowResolutionScale");
-    RenderDelayCreation = gSavedSettings.getBOOL("RenderDelayCreation");
+//  RenderDelayCreation = gSavedSettings.getBOOL("RenderDelayCreation"); <3T:TommyTheTerrible> Has tons of issues when enabled.
 //  RenderAnimateRes = gSavedSettings.getBOOL("RenderAnimateRes"); <FS:Beq> FIRE-23122 BUG-225920 Remove broken RenderAnimateRes functionality.
     FreezeTime = gSavedSettings.getBOOL("FreezeTime");
     DebugBeaconLineWidth = gSavedSettings.getS32("DebugBeaconLineWidth");
