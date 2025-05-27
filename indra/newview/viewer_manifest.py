@@ -55,10 +55,10 @@ sys.path.insert(0, os.path.join(viewer_dir, os.pardir, "lib", "python"))
 from indra.util.llmanifest import LLManifest, main, path_ancestors, CHANNEL_VENDOR_BASE, RELEASE_CHANNEL, ManifestError, MissingError
 # <FS:Beq> try to work around weird Mac build issue that seems to find the wrong python
 #import llsd
-try:
-    import llsd
-except ImportError:
-    from llbase import llsd
+#try:
+#    import llsd
+#except ImportError:
+#    from llbase import llsd
 # </FS:Beq>
 class ViewerManifest(LLManifest,FSViewerManifest):
     def is_packaging_viewer(self):
@@ -172,9 +172,9 @@ class ViewerManifest(LLManifest,FSViewerManifest):
 
                 # put_in_file(src=) need not be an actual pathname; it
                 # only needs to be non-empty
-                self.put_in_file(llsd.format_pretty_xml(settings_install),
-                                 "settings_install.xml",
-                                 src="environment")
+                #self.put_in_file(llsd.format_pretty_xml(settings_install),
+                #                 "settings_install.xml",
+                #                 src="environment")
 
 
             with self.prefix(src_dst="character"):
