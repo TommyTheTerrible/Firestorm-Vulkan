@@ -1375,15 +1375,17 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
         mLastUpdateKey = LLTextureKey(last_imagep->getID(), (ETexListType)last_imagep->getTextureListType());
     }
 
-    for (auto texture : mFetchingTextures)
+    auto texture_conditional = mFetchingTextures.begin();
+    while (!mFetchingTextures.empty() &&
+        texture_conditional != mFetchingTextures.end() &&
+        timer.getElapsedTimeF32() < max_time)
     {
-        if (timer.getElapsedTimeF32() > max_time)
-            break;
-
+        auto texture = *texture_conditional;
         if (texture)
         {
             texture->updateFetch();
         }
+        texture_conditional++;
     }
 
     return timer.getElapsedTimeF32();
