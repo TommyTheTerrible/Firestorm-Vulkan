@@ -2975,7 +2975,7 @@ void LLPipeline::processMarkedTextures(F32 max_dtime)
     while (!gTextureList.mMarkedTextures.empty() && update_timer.getElapsedTimeF32() < max_dtime)
     {
         LLViewerTexture* texture = *gTextureList.mMarkedTextures.begin();
-        if (texture && texture->getGLTexture() && texture->getNumRefs() > 1)
+        if (texture)
         {
             LLViewerFetchedTexture* fetched_texture = LLViewerTextureManager::staticCastToFetchedTexture(texture);
             if (fetched_texture)
