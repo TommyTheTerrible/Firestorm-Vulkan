@@ -1353,7 +1353,7 @@ void LLViewerFetchedTexture::destroyTexture()
     {
         return;
     }
-
+    gTextureList.mFetchingTextures.erase(this);
     //LL_DEBUGS("Avatar") << mID << LL_ENDL;
     destroyGLTexture();
     mFullyLoaded = false;

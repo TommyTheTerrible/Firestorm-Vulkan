@@ -1949,9 +1949,9 @@ bool LLTextureFetchWorker::doWork(S32 param)
             return true;
         }
 
-        // <3T:TommyTheTerrible> Stop sending requests if Decode threadpool nearly fully
-        // (LLThreadPool for Decode has 1024 capacity which we reduce by twice the number of threads)
-        if (gTextureList.aDecodingCount >= 512 || LLAppViewer::instance()->getImageDecodeThread()->getPending() >= 512)
+        // <3T:TommyTheTerrible> Stop sending requests if Decode threadpool filling too fast
+        // (LLThreadPool for Decode has 1024 capacity)
+        if (gTextureList.aDecodingCount >= 256 || LLAppViewer::instance()->getImageDecodeThread()->getPending() >= 256)
         {
             //LL_WARNS_ONCE() << "Decode queue nearly full!" << LL_ENDL;
             return false;
