@@ -2251,8 +2251,7 @@ bool LLViewerFetchedTexture::updateFetch()
     }
     // </3T:TommyTheTerrible>
     // <3T:TommyTheTerrible> Stop unnecessary requests when already at desired discard. 
-    else if ((mBoostLevel <= LLViewerTexture::BOOST_AVATAR_BAKED) && current_discard >= 0 &&
-             current_discard == desired_discard)
+    else if (current_discard >= 0 && current_discard == desired_discard)
     {
         LL_PROFILE_ZONE_NAMED_CATEGORY_TEXTURE("vftuf - Do not Send Requests if current and desired equal");
         make_request = false;
@@ -2261,12 +2260,6 @@ bool LLViewerFetchedTexture::updateFetch()
     else if (gTextureList.aDecodingCount >= 512 || LLAppViewer::instance()->getImageDecodeThread()->getPending() >= 512)
     {
         make_request = false;
-    }
-
-    if (forSculpt() || getBoostLevel() == LLGLTexture::BOOST_SCULPTED)
-    {
-        desired_discard = 0;
-        make_request = (mRequestedDiscardLevel != desired_discard && !mIsFetching);
     }
 
     if (make_request)
