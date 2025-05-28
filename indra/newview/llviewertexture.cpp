@@ -2355,7 +2355,7 @@ bool LLViewerFetchedTexture::updateFetch()
         }
     }
 
-    if (mIsFetching)
+    if (mIsFetching && make_request)
         gTextureList.mFetchingTextures.insert(this);
     else if (!mHasFetcher)
     {
