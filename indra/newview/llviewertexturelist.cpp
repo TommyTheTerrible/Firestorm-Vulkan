@@ -1173,7 +1173,7 @@ F32 LLViewerTextureList::updateImagesCreateTextures(F32 max_time)
     //
 
     LLTimer create_timer;
-
+    /* <3T: TommyTheTerrible> Removing duplicate texture creation and downscaling loops.
     while (!mCreateTextureList.empty())
     {
         LLViewerFetchedTexture* imagep = mCreateTextureList.front();
@@ -1192,7 +1192,7 @@ F32 LLViewerTextureList::updateImagesCreateTextures(F32 max_time)
         imagep->postCreateTexture();
         imagep->mCreatePending = false;
         mCreateTextureList.pop();
-        /*
+
         if (imagep->hasGLTexture() && imagep->getDiscardLevel() < imagep->getDesiredDiscardLevel() &&
            // <FS:minerjr> [FIRE-35081] Blurry prims not changing with graphics settings, not happening with SL Viewer
            //(imagep->getDesiredDiscardLevel() <= MAX_DISCARD_LEVEL))
@@ -1206,13 +1206,12 @@ F32 LLViewerTextureList::updateImagesCreateTextures(F32 max_time)
             LL_WARNS_ONCE("Texture") << "Texture will be downscaled immediately after loading." << LL_ENDL;
             imagep->scaleDown();
         }
-        */
+
         if (create_timer.getElapsedTimeF32() > max_time * 0.5f)
         {
             break;
         }
     }
-
     if (!mDownScaleQueue.empty() && gPipeline.mDownResMap.isComplete())
     {
         LLGLDisable blend(GL_BLEND);
@@ -1255,7 +1254,7 @@ F32 LLViewerTextureList::updateImagesCreateTextures(F32 max_time)
         gCopyProgram.unbind();
         gPipeline.mDownResMap.flush();
     }
-
+    </3T:TommyTheTerrible>*/ 
     // do at least 5 and make sure we don't get too far behind even if it violates
     // the time limit.  Textures pending creation have a copy of their texture data
     // in system memory, so we don't want to let them pile up.
