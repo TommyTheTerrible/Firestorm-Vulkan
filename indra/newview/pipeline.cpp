@@ -2974,7 +2974,7 @@ void LLPipeline::processMarkedTextures(F32 max_dtime)
     S32 fetch_count = 256 - gTextureList.aDecodingCount;
     while (!gTextureList.mMarkedTextures.empty() && update_timer.getElapsedTimeF32() < max_dtime && fetch_count > 0)
     {
-        LLViewerTexture* texture = *gTextureList.mMarkedTextures.begin();
+        LLViewerTexture* texture = gTextureList.mMarkedTextures.front();
         if (texture)
         {
             LLViewerFetchedTexture* fetched_texture = LLViewerTextureManager::staticCastToFetchedTexture(texture);
@@ -2986,7 +2986,7 @@ void LLPipeline::processMarkedTextures(F32 max_dtime)
                 }
             }
         }
-        gTextureList.mMarkedTextures.erase(texture);
+        gTextureList.mMarkedTextures.pop();
     }
 }
 
