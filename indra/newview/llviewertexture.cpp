@@ -2346,7 +2346,10 @@ bool LLViewerFetchedTexture::updateFetch()
         // for a while.  Note - this is the normal mechanism for
         // deleting requests, not just a place to handle timeouts.
         const F32 FETCH_IDLE_TIME = 0.1f;
-        if (mLastPacketTimer.getElapsedTimeF32() > FETCH_IDLE_TIME)
+        //<3T:TommyTheTerrible> Do not delete job if decoding or writing to cache.
+        // if (mLastPacketTimer.getElapsedTimeF32() > FETCH_IDLE_TIME)
+        if (mLastPacketTimer.getElapsedTimeF32() > FETCH_IDLE_TIME && (mFetchState < 10 || mFetchState == 14))
+        //</3T>
         {
             LL_DEBUGS("Texture") << "exceeded idle time " << FETCH_IDLE_TIME << ", deleting request: " << getID() << LL_ENDL;
             LLAppViewer::getTextureFetch()->deleteRequest(getID(), true);
