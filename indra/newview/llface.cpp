@@ -296,7 +296,7 @@ void LLFace::markTextures()
     {
         if (mTexture[i] && mTexture[i]->getBoostLevel() == LLGLTexture::BOOST_NONE &&
             mTexture[i]->getType() == LLViewerTexture::LOD_TEXTURE)
-            gTextureList.mMarkedTextures.insert(mTexture[i]);
+            gTextureList.mMarkedTextures.push(mTexture[i]);
     }
 }
 
