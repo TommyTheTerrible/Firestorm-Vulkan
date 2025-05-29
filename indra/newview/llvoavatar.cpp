@@ -6407,14 +6407,8 @@ bool LLVOAvatar::allTexturesCompletelyDownloaded(std::set<LLUUID>& ids) const
     for (std::set<LLUUID>::const_iterator it = ids.begin(); it != ids.end(); ++it)
     {
         LLViewerFetchedTexture *imagep = gTextureList.findImage(*it, TEX_LIST_STANDARD);
-        if (imagep && !imagep->isMissingAsset() && imagep->getDiscardLevel() < 0 &&
-            imagep != LLViewerFetchedTexture::sInvisibleImagep) // <3T:TommyTheTerrible> Let the texture pass if it's been decoded.
+        if (imagep && !imagep->isMissingAsset() && imagep->getDiscardLevel() < 0) // <3T:TommyTheTerrible> Let the texture pass if it's been decoded.
         {
-            if (imagep->getMaxVirtualSize() < MIN_IMAGE_AREA)
-                imagep->addTextureStats(MIN_IMAGE_AREA);
-            imagep->setMaxFaceImportance(1);
-            imagep->processTextureStats();
-            imagep->updateFetch();
             return false;
         }
     }
@@ -6679,8 +6673,8 @@ void LLVOAvatar::updateTextures()
             //addBakedTextureStats( imagep, mPixelArea, texel_area_ratio, boost_level );
             imagep->addTextureStats(mPixelArea / texel_area_ratio);
             imagep->setBoostLevel(boost_level);
+            imagep->setMaxFaceImportance(1);
             imagep->processTextureStats();
-            imagep->updateFetch();
             // </3T:TommyTheTerrible>
             // <FS:Ansariel> [Legacy Bake]
             // Spam if this is a baked texture, not set to default image, without valid host info
@@ -10144,7 +10138,9 @@ void LLVOAvatar::updateMeshTextures()
                 // doing compositing).
                 useBakedTexture( baked_img->getID() );
                                 mLoadedCallbacksPaused |= !isVisible();
-                                checkTextureLoading();
+                                //<3T:TommyTheTerrible> This is happening a lot, perhaps too much, so limiting it to only the idleUpdate.
+                                //checkTextureLoading();
+                                //</3T>
             }
             else
             {
@@ -10165,7 +10161,9 @@ void LLVOAvatar::updateMeshTextures()
 
                 // this could add paused texture callbacks
                 mLoadedCallbacksPaused |= paused;
-                checkTextureLoading();
+                //<3T:TommyTheTerrible> This is happening a lot, perhaps too much, so limiting it to only the idleUpdate.
+                //checkTextureLoading();
+                //</3T>
             }
         }
         else if (layerset && isUsingLocalAppearance())
