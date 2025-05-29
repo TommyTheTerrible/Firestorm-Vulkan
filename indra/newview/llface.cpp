@@ -2475,7 +2475,7 @@ void LLFace::fastcalcImportance()
     LLViewerObject* vobj = getViewerObject();
     bool in_frustum = false;
     F32 importance = 0;
-    S64 window_area = (gViewerWindow->getWindowHeightRaw() * gViewerWindow->getWindowWidthRaw());
+
     if (vobj && vobj->mDrawable)
     {
         F32 pixel_area = mPixelArea;
@@ -2487,7 +2487,7 @@ void LLFace::fastcalcImportance()
         {
             in_frustum = vobj->mDrawable->getSpatialGroup()->isVisible();
         }
-        importance = (pixel_area / window_area) * (LLViewerTexture::sDesiredDiscardBias < 3 || in_frustum);
+        importance = (pixel_area / LLViewerCamera::getInstance()->getScreenPixelArea()) * (LLViewerTexture::sDesiredDiscardBias < 3 || in_frustum);
     }
     else
     {
