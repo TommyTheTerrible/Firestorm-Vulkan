@@ -2971,8 +2971,8 @@ void LLPipeline::processMarkedTextures(F32 max_dtime)
     LL_PROFILE_ZONE_SCOPED_CATEGORY_PIPELINE;
 
     LLTimer update_timer;
-
-    while (!gTextureList.mMarkedTextures.empty() && update_timer.getElapsedTimeF32() < max_dtime)
+    S32 fetch_count = 256 - gTextureList.aDecodingCount;
+    while (!gTextureList.mMarkedTextures.empty() && update_timer.getElapsedTimeF32() < max_dtime && fetch_count > 0)
     {
         LLViewerTexture* texture = *gTextureList.mMarkedTextures.begin();
         if (texture)
@@ -2980,9 +2980,9 @@ void LLPipeline::processMarkedTextures(F32 max_dtime)
             LLViewerFetchedTexture* fetched_texture = LLViewerTextureManager::staticCastToFetchedTexture(texture);
             if (fetched_texture)
             {
-                if (gTextureList.updateImageDecodePriority(fetched_texture) && fetched_texture->isActive())
+                if (gTextureList.updateImageDecodePriority(fetched_texture))
                 {
-                    fetched_texture->updateFetch();
+                    fetch_count -= fetched_texture->updateFetch();
                 }
             }
         }

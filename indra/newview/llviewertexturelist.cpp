@@ -1373,7 +1373,7 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
     {
         mLastUpdateKey = LLTextureKey(last_imagep->getID(), (ETexListType)last_imagep->getTextureListType());
     }
-    S32 fetch_count = 256;
+    S32 fetch_count = 256 - gTextureList.aDecodingCount;
     for (auto iter = mFetchingTextures.begin();
         iter != mFetchingTextures.end() && timer.getElapsedTimeF32() < max_time && fetch_count > 0;)
     {
