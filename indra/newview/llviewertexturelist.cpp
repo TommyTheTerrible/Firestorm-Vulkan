@@ -1375,7 +1375,7 @@ F32 LLViewerTextureList::updateImagesFetchTextures(F32 max_time)
     }
     S32 fetch_count = 256 - gTextureList.aDecodingCount;
     for (auto iter = mFetchingTextures.begin();
-        iter != mFetchingTextures.end() && timer.getElapsedTimeF32() < max_time && fetch_count > 0;)
+        mFetchingTextures.size() > 0 && iter != mFetchingTextures.end() && timer.getElapsedTimeF32() < max_time && fetch_count > 0;)
     {
         LLViewerFetchedTexture* imagep = *iter++;
         if (imagep && imagep->isActive())
