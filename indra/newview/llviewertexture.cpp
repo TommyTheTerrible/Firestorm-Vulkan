@@ -82,7 +82,6 @@ LLPointer<LLViewerTexture>        LLViewerTexture::sBlackImagep = nullptr;
 LLPointer<LLViewerTexture>        LLViewerTexture::sCheckerBoardImagep = nullptr;
 LLPointer<LLViewerFetchedTexture> LLViewerFetchedTexture::sMissingAssetImagep = nullptr;
 LLPointer<LLViewerFetchedTexture> LLViewerFetchedTexture::sWhiteImagep = nullptr;
-LLPointer<LLViewerFetchedTexture> LLViewerFetchedTexture::sInvisibleImagep = nullptr;
 LLPointer<LLViewerFetchedTexture> LLViewerFetchedTexture::sDefaultParticleImagep = nullptr;
 LLPointer<LLViewerFetchedTexture> LLViewerFetchedTexture::sDefaultImagep = nullptr;
 LLPointer<LLViewerFetchedTexture> LLViewerFetchedTexture::sSmokeImagep = nullptr;
@@ -498,7 +497,7 @@ void LLViewerTextureManager::cleanup()
     LLViewerFetchedTexture::sMissingAssetImagep = NULL;
     LLTexUnit::sWhiteTexture = 0;
     LLViewerFetchedTexture::sWhiteImagep = NULL;
-    LLViewerFetchedTexture::sInvisibleImagep = NULL;
+
     LLViewerFetchedTexture::sFlatNormalImagep = NULL;
     LLViewerFetchedTexture::sDefaultIrradiancePBRp = NULL;
 
