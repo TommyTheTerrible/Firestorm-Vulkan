@@ -2559,8 +2559,6 @@ bool LLVOAvatarSelf::getIsCloud() const
             const LLViewerTexture* baked_img = getImage( texture_data.mTextureIndex, 0 );
             if (!baked_img || !baked_img->hasGLTexture())
             {
-                if (baked_img && baked_img == LLViewerFetchedTexture::sInvisibleImagep)
-                    continue;
                 if (do_warn)
                 {
                     LL_INFOS() << "Self is clouded because texture at index " << i
