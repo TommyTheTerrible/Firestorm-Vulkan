@@ -28,6 +28,7 @@
 #define LL_LLHASH_H
 
 #include <boost/functional/hash.hpp>
+#include <chrono>
 
 // Warning - an earlier template-based version of this routine did not do
 // the correct thing on Windows.   Since this is only used to get
@@ -48,6 +49,27 @@ inline size_t llhash( const char * value )
         boost::hash_combine(seed, *value);
     return seed;
 }
+
+//<3T:TommyTheTerrible> A high speed 64-bit performance hash for use with unsorted_sets using 64-bit pointers.
+// Code has been given to the public domain.
+struct vigna_hash
+{
+    static uint64_t splitmix64(uint64_t x)
+    {
+        // http://xorshift.di.unimi.it/splitmix64.c
+        x += 0x9e3779b97f4a7c15;
+        x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
+        x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
+        return x ^ (x >> 31);
+    }
+
+    size_t operator()(uint64_t x) const
+    {
+        static const uint64_t FIXED_RANDOM = std::chrono::steady_clock::now().time_since_epoch().count();
+        return splitmix64(x + FIXED_RANDOM);
+    }
+};
+//</3T>
 
 #endif
 
