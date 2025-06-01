@@ -1353,7 +1353,9 @@ void LLViewerFetchedTexture::destroyTexture()
     {
         return;
     }
+    // <3T:TommyTheTerrible> Make sure texture is removed from Fetching texture list when destroyed.
     gTextureList.mFetchingTextures.erase(this);
+    // </3T>
     //LL_DEBUGS("Avatar") << mID << LL_ENDL;
     destroyGLTexture();
     mFullyLoaded = false;
