@@ -1021,7 +1021,7 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
         //
         LLAppViewer::instance()->pingMainloopTimeout("Display:StateSort");
         {
-            LL_PROFILE_ZONE_NAMED_CATEGORY_DISPLAY("display - 4")
+            LL_PROFILE_ZONE_NAMED_CATEGORY_DISPLAY("display - 4");
             LLViewerCamera::sCurCameraID = LLViewerCamera::CAMERA_WORLD;
             gPipeline.stateSort(camera, result); // <FS:Ansariel> Factor out calls to getInstance
             stop_glerror();
@@ -1129,7 +1129,7 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
         if (!(LLAppViewer::instance()->logoutRequestSent() && LLAppViewer::instance()->hasSavedFinalSnapshot())
                 && !gRestoreGL)
         {
-            LL_PROFILE_ZONE_NAMED_CATEGORY_DISPLAY("display - 5")
+            LL_PROFILE_ZONE_NAMED_CATEGORY_DISPLAY("display - 5");
             LLViewerCamera::sCurCameraID = LLViewerCamera::CAMERA_WORLD;
 
             // <FS:Ansariel> gSavedSettings replacement
