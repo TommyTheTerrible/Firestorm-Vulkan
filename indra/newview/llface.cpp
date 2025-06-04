@@ -2495,6 +2495,8 @@ void LLFace::fastcalcImportance()
     }
 
     mImportanceToCamera = importance;
+    mInFrustum = (mImportanceToCamera > 0.f);
+    mVSize = mPixelArea * mInFrustum;
 }
 
 bool LLFace::calcPixelArea(F32& cos_angle_to_view_dir, F32& radius)
