@@ -2661,7 +2661,7 @@ void LLVOAvatar::resetSkeleton(bool reset_animations)
         applyDefaultParams();
         setCompositeUpdatesEnabled( true );
         updateMeshTextures();
-        if (getRezzedStatus() == 3)
+        if (getRezzedStatus() >= 3)
         updateMeshVisibility();
     }
     updateVisualParams();
@@ -8627,7 +8627,7 @@ const LLViewerJointAttachment *LLVOAvatar::attachObject(LLViewerObject *viewer_o
         }
     }
 
-    if (getRezzedStatus() == 3)
+    if (getRezzedStatus() >= 3)
     updateMeshVisibility();
 
     return attachment;
@@ -8937,7 +8937,7 @@ bool LLVOAvatar::detachObject(LLViewerObject *viewer_object)
                 }
             }
 
-            if (getRezzedStatus() == 3)
+            if (getRezzedStatus() >= 3)
             updateMeshVisibility();
 
             LL_DEBUGS() << "Detaching object " << viewer_object->mID << " from " << attachment->getName() << LL_ENDL;
@@ -11213,7 +11213,7 @@ void LLVOAvatar::applyParsedAppearanceMessage(LLAppearanceMessageContents& conte
     }
 
     updateMeshTextures();
-    if (getRezzedStatus() == 3)
+    if (getRezzedStatus() >= 3)
         updateMeshVisibility();
     idleUpdateLoadingEffect();
 }
@@ -12895,7 +12895,7 @@ void LLVOAvatar::updateOverallAppearance()
             mNeedsImpostorUpdate = true;
             mLastImpostorUpdateReason = 8;
         }
-        if (getRezzedStatus() == 3)
+        if (getRezzedStatus() >= 3)
         updateMeshVisibility();
     }
 
