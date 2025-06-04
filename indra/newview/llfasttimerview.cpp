@@ -1071,6 +1071,7 @@ void LLFastTimerView::drawLineGraph()
 
     F32Seconds cur_max(0);
     U32 cur_max_calls = 0;
+    std::vector<F32> previous_bottom(mRecording.getNumRecordedPeriods(), (F32)mGraphRect.mBottom);
 
     for(LLTrace::block_timer_tree_df_iterator_t it = LLTrace::begin_block_timer_tree_df(FTM_FRAME);
         it != LLTrace::end_block_timer_tree_df();
@@ -1108,6 +1109,7 @@ void LLFastTimerView::drawLineGraph()
         F32 call_scale_factor = (F32)mGraphRect.getHeight() / (F32)max_calls;
         F32 time_scale_factor = (F32)mGraphRect.getHeight() / max_time.value();
         F32 hz_scale_factor = (F32) mGraphRect.getHeight() / (1.f / max_time.value());
+        bool keep_bottom = (it != LLTrace::begin_block_timer_tree_df(FTM_FRAME) && (!idp->hasChildren() || (idp->hasChildren() && idp->getTreeNode().mCollapsed)));
 
         for (U32 j = static_cast<U32>(mRecording.getNumRecordedPeriods());
             j > 0;
@@ -1128,17 +1130,19 @@ void LLFastTimerView::drawLineGraph()
             switch(mDisplayType)
 {
             case DISPLAY_TIME:
-                y = mGraphRect.mBottom + time.value() * time_scale_factor;
+                y = previous_bottom[mRecording.getNumRecordedPeriods() - j] + time.value() * time_scale_factor;
                 break;
             case DISPLAY_CALLS:
-                y = mGraphRect.mBottom + (F32)calls * call_scale_factor;
+                y = previous_bottom[mRecording.getNumRecordedPeriods() - j] + (F32)calls * call_scale_factor;
                 break;
             case DISPLAY_HZ:
-                y = mGraphRect.mBottom + (1.f / time.value()) * hz_scale_factor;
+                y = previous_bottom[mRecording.getNumRecordedPeriods() - j] + (1.f / time.value()) * hz_scale_factor;
                 break;
             }
             gGL.vertex2f(x,y);
-            gGL.vertex2f(x,(GLfloat)mGraphRect.mBottom);
+            gGL.vertex2f(x, (GLfloat)previous_bottom[mRecording.getNumRecordedPeriods() - j]);
+            if (keep_bottom)
+                previous_bottom[mRecording.getNumRecordedPeriods() - j] = y;
         }
         gGL.end();
 
