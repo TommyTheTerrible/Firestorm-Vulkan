@@ -745,10 +745,11 @@ void LLVOVolume::animateTextures()
             {
                 LLFace* facep = mDrawable->getFace(i);
                 if (!facep) continue;
-                // <FS:minerjr> [FIRE-35081] Blurry prims not changing with graphics settings, not happening with SL Viewer
-                // Removed check for turning off animations
-                //if(facep->getVirtualSize() <= MIN_TEX_ANIM_SIZE && facep->mTextureMatrix) continue;
-                // </FS:minerjr> [FIRE-35081]
+                // <3T:TommyTheTerrible> Adjusting animated texture optimization to use importance, since it starts at one.
+                //      The mPixelArea and mVSize variables both start at zero, so if we try to use them here the continue
+                //      would be run too soon but we only want it continuing on faces off-screen (to reduce state changes on GPU).
+                if(facep->getImportanceToCamera() == 0 && facep->mTextureMatrix) continue;
+                // </3T>
 
                 const LLTextureEntry* te = facep->getTextureEntry();
 
@@ -773,10 +774,9 @@ void LLVOVolume::animateTextures()
                 if (!facep->mTextureMatrix)
                 {
                     facep->mTextureMatrix = new LLMatrix4();
-                    // <FS:minerjr> [FIRE-35081] Blurry prims not changing with graphics settings, not happening with SL Viewer
-                    // Removed check for turning off animations
-                    //if (facep->getVirtualSize() > MIN_TEX_ANIM_SIZE)
-                    // </FS:minerjr> [FIRE-35081]                    
+                    // <3T:TommyTheTerrible> Only assign a rebuild if the virtual size is greater than zero (which means it's on screen)
+                    if (facep->getVirtualSize() > 0)
+                    // </3T>
                     {
                         // Fix the one edge case missed in
                         // LLVOVolume::updateTextureVirtualSize when the
