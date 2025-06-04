@@ -573,12 +573,14 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
                 gBumpImageList.updateImages();  // must be called before gTextureList version so that it's textures are thrown out first.
             }
 
-            {
-                LL_PROFILE_ZONE_NAMED_CATEGORY_DISPLAY("List");
-                F32 max_image_decode_time = 0.050f * gFrameIntervalSeconds.value();          // 50 ms/second decode time
-                max_image_decode_time     = llclamp(max_image_decode_time, 0.002f, 0.005f);  // min 2ms/frame, max 5ms/frame)
-                gTextureList.updateImages(max_image_decode_time);
-            }
+            //<3T:TommyTheTerrible> This is done twice in this function alone and not sure why. Removing this one, leaving below.
+            //{
+            //    LL_PROFILE_ZONE_NAMED_CATEGORY_DISPLAY("List");
+            //    F32 max_image_decode_time = 0.050f * gFrameIntervalSeconds.value();          // 50 ms/second decode time
+            //    max_image_decode_time     = llclamp(max_image_decode_time, 0.002f, 0.005f);  // min 2ms/frame, max 5ms/frame)
+            //    gTextureList.updateImages(max_image_decode_time);
+            //}
+            // </3T>
 
             {
                 LL_PROFILE_ZONE_NAMED_CATEGORY_DISPLAY("GLTF Materials Cleanup");
