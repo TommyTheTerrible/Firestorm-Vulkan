@@ -6155,8 +6155,11 @@ void LLVolumeGeometryManager::rebuildGeom(LLSpatialGroup* group)
             }
             // </FS:AO>
 
-            if (vobj->isAvatar()) // TommyTheTerrible - Limiting texture updates to only avatars
-                vobj->updateTextureVirtualSize(true);
+            //<3T:TommyTheTerrible> Updating textures like this is not necessary anymore, even for avatars, and
+            //      just adds to unnecessary texture churn by using more than one calculation method.
+            //if (vobj->isAvatar()) // TommyTheTerrible - Limiting texture updates to only avatars
+            //    vobj->updateTextureVirtualSize(true);
+            // </3T>
             vobj->preRebuild();
 
             drawablep->clearState(LLDrawable::HAS_ALPHA);
