@@ -2536,9 +2536,11 @@ void LLViewerObject::loadFlags(U32 flags)
     mCreateSelected = ((flags & FLAGS_CREATE_SELECTED) != 0);
     return;
 }
+static LLTrace::BlockTimerStatHandle FTM_IDLE_OBJECT_UPDATES("Idle Object Updates");
 
 void LLViewerObject::idleUpdate(LLAgent &agent, const F64 &frame_time)
 {
+    LL_RECORD_BLOCK_TIME(FTM_IDLE_OBJECT_UPDATES);
     if (!mDead)
     {
         if (!mStatic && sVelocityInterpolate && !isSelected())

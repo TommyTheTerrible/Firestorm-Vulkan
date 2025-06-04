@@ -3049,6 +3049,7 @@ void LLVOAvatar::dumpAnimationState()
     }
 }
 
+static LLTrace::BlockTimerStatHandle FTM_IDLE_AVATAR_UPDATES("Idle Avatar Updates");
 //------------------------------------------------------------------------
 // idleUpdate()
 //------------------------------------------------------------------------
@@ -3056,6 +3057,7 @@ void LLVOAvatar::idleUpdate(LLAgent &agent, const F64 &time)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_AVATAR;
 
+    LL_RECORD_BLOCK_TIME(FTM_IDLE_AVATAR_UPDATES);
     if (LLApp::isExiting())
         return;
 

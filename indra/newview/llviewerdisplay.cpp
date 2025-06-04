@@ -466,11 +466,23 @@ bool hasCameraChanged(int frames)
         return true;
     return false;
 }
+static LLTrace::BlockTimerStatHandle FTM_RENDER("Render");
+static LLTrace::BlockTimerStatHandle FTM_RENDER_UPDATE_GEOM("Update Geometry");
+static LLTrace::BlockTimerStatHandle FTM_RENDER_UPDATE_IMAGES("Update Images");
+static LLTrace::BlockTimerStatHandle FTM_RENDER_STATESORT("State Sort");
+static LLTrace::BlockTimerStatHandle FTM_RENDER_SKY_UPDATE("Update Sky");
+static LLTrace::BlockTimerStatHandle FTM_RENDER_LIGHTING("Render Lighting");
+static LLTrace::BlockTimerStatHandle FTM_RENDER_FRAME_BUFFER("Capture Frame Buffer");
+static LLTrace::BlockTimerStatHandle FTM_RENDER_UNBIND_TEXTURES("Unbind Textures");
+static LLTrace::BlockTimerStatHandle FTM_RENDER_SHADERS("Shaders");
+static LLTrace::BlockTimerStatHandle FTM_RENDER_SHADERS_OCCULSION("Occulsion Shader");
+static LLTrace::BlockTimerStatHandle FTM_RENDER_UI("Render UI");
 
 // Paint the display!
 void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
 {
     LL_PROFILE_ZONE_NAMED_CATEGORY_DISPLAY("Render");
+    LL_RECORD_BLOCK_TIME(FTM_RENDER);
     S32 current_frame = LLViewerOctreeEntryData::getCurrentFrame();
     LLTimer drawtimer;
     LLPerfStats::RecordSceneTime T (LLPerfStats::StatType_t::RENDER_DISPLAY); // render time capture - This is the main stat for overall rendering.
@@ -871,6 +883,7 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
         LLTimer objtimer;
         {
             LL_PROFILE_ZONE_NAMED_CATEGORY_DISPLAY("Update Geom");
+            LL_RECORD_BLOCK_TIME(FTM_RENDER_UPDATE_GEOM);
             //const F32 max_geom_update_time = 0.005f*10.f*gFrameIntervalSeconds.value(); // 50 ms/second update time
             const F32 max_geom_update_time = 0.005f; // 5 ms/second update time
             gPipeline.createObjects(max_geom_update_time);
@@ -975,6 +988,7 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
         {
             LL_PROFILE_ZONE_NAMED("Update Images");
 
+            LL_RECORD_BLOCK_TIME(FTM_RENDER_UPDATE_IMAGES);
             {
                 LL_PROFILE_ZONE_NAMED_CATEGORY_DISPLAY("Class");
                 LLViewerTexture::updateClass();
@@ -1022,6 +1036,7 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
         LLAppViewer::instance()->pingMainloopTimeout("Display:StateSort");
         {
             LL_PROFILE_ZONE_NAMED_CATEGORY_DISPLAY("display - 4");
+            LL_RECORD_BLOCK_TIME(FTM_RENDER_STATESORT);
             LLViewerCamera::sCurCameraID = LLViewerCamera::CAMERA_WORLD;
             gPipeline.stateSort(camera, result); // <FS:Ansariel> Factor out calls to getInstance
             stop_glerror();
@@ -1045,6 +1060,7 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
         LLPipeline::sUseOcclusion = occlusion;
 
         {
+            LL_RECORD_BLOCK_TIME(FTM_RENDER_SKY_UPDATE);
             LLAppViewer::instance()->pingMainloopTimeout("Display:Sky");
             LL_PROFILE_ZONE_NAMED_CATEGORY_ENVIRONMENT("update sky"); //LL_RECORD_BLOCK_TIME(FTM_UPDATE_SKY);
             gSky.updateSky();
@@ -1130,6 +1146,7 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
                 && !gRestoreGL)
         {
             LL_PROFILE_ZONE_NAMED_CATEGORY_DISPLAY("display - 5");
+            LL_RECORD_BLOCK_TIME(FTM_RENDER_SHADERS);
             LLViewerCamera::sCurCameraID = LLViewerCamera::CAMERA_WORLD;
 
             // <FS:Ansariel> gSavedSettings replacement
@@ -1138,6 +1155,7 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
             if (renderDepthPrePass)
             // </FS:Ansariel>
             {
+                LL_RECORD_BLOCK_TIME(FTM_RENDER_SHADERS_OCCULSION);
                 gGL.setColorMask(false, false);
 
                 static const U32 types[] = {
@@ -1171,6 +1189,7 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
         LLTimer rendertimer;
         {
             LL_PROFILE_ZONE_NAMED_CATEGORY_DISPLAY("Texture Unbind");
+            LL_RECORD_BLOCK_TIME(FTM_RENDER_UNBIND_TEXTURES);
             for (S32 i = 0; i < gGLManager.mNumTextureImageUnits; i++)
             { //dummy cleanup of any currently bound textures
                 if (gGL.getTexUnit(i)->getCurrType() != LLTexUnit::TT_NONE)
@@ -1188,12 +1207,14 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
 
         if (LLPipeline::sRenderDeferred)
         {
+            LL_RECORD_BLOCK_TIME(FTM_RENDER_LIGHTING);
             gPipeline.renderDeferredLighting();
         }
 
         LLPipeline::sUnderWaterRender = false;
 
         {
+            LL_RECORD_BLOCK_TIME(FTM_RENDER_FRAME_BUFFER);
             //capture the frame buffer.
             LLSceneMonitor::getInstance()->capture();
         }
@@ -1201,6 +1222,7 @@ void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
         LLAppViewer::instance()->pingMainloopTimeout("Display:RenderUI");
         if (!for_snapshot)
         {
+            LL_RECORD_BLOCK_TIME(FTM_RENDER_UI);
             render_ui();
             swap();
         }

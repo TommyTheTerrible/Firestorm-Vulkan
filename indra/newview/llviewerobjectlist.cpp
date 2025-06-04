@@ -965,9 +965,12 @@ void LLViewerObjectList::updateApparentAngles(LLAgent &agent, F32 max_time)
     LLVOAvatar::cullAvatarsByPixelArea();
 }
 
+static LLTrace::BlockTimerStatHandle FTM_ACTIVE_OBJECT_UPDATES("Active Object Updates");
+
 void LLViewerObjectList::update(LLAgent &agent)
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_NETWORK;
+    LL_RECORD_BLOCK_TIME(FTM_ACTIVE_OBJECT_UPDATES);
     // <FS:Ansariel> Speed up debug settings
     static LLCachedControl<bool> velocityInterpolate(gSavedSettings, "VelocityInterpolate");
     static LLCachedControl<bool> pingInterpolate(gSavedSettings, "PingInterpolate");

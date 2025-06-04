@@ -1550,6 +1550,9 @@ bool LLAppViewer::frame()
     return ret;
 }
 
+static LLTrace::BlockTimerStatHandle FTM_USER_INPUT("User Inputs");
+static LLTrace::BlockTimerStatHandle FTM_BACKGROUND_THREADS("Background Threads");
+
 bool LLAppViewer::doFrame()
 {
     LL_RECORD_BLOCK_TIME(FTM_FRAME);
@@ -1691,6 +1694,7 @@ bool LLAppViewer::doFrame()
                 && !gFocusMgr.focusLocked())
             {
                 LL_PROFILE_ZONE_NAMED_CATEGORY_APP("df JoystickKeyboard"); // <FS:Beq/> Move this to the right place
+                LL_RECORD_BLOCK_TIME(FTM_USER_INPUT);
                 LLPerfStats::RecordSceneTime T (LLPerfStats::StatType_t::RENDER_IDLE);
                 joystick->scanJoystick();
                 gKeyboard->scanKeyboard();
@@ -1778,6 +1782,7 @@ bool LLAppViewer::doFrame()
         {
             //LL_RECORD_BLOCK_TIME(SLEEP2);
             LL_PROFILE_ZONE_WARN("Sleep2");
+            LL_RECORD_BLOCK_TIME(FTM_BACKGROUND_THREADS);
 
             // yield some time to the os based on command line option
             static LLCachedControl<S32> yield_time(gSavedSettings, "YieldTime", -1);
@@ -5529,6 +5534,7 @@ static LLTrace::BlockTimerStatHandle FTM_AGENT_NETWORK("Agent Network");
 static LLTrace::BlockTimerStatHandle FTM_VLMANAGER("VL Manager");
 static LLTrace::BlockTimerStatHandle FTM_AGENT_POSITION("Agent Position");
 static LLTrace::BlockTimerStatHandle FTM_HUD_EFFECTS("HUD Effects");
+static LLTrace::BlockTimerStatHandle FTM_PRIMARY_IDLE("Idle Updates");
 
 ///////////////////////////////////////////////////////
 // idle()
@@ -5539,6 +5545,7 @@ static LLTrace::BlockTimerStatHandle FTM_HUD_EFFECTS("HUD Effects");
 void LLAppViewer::idle()
 {
     LL_PROFILE_ZONE_SCOPED_CATEGORY_APP;
+    LL_RECORD_BLOCK_TIME(FTM_PRIMARY_IDLE);
     pingMainloopTimeout("Main:Idle");
 
     // Update frame timers
