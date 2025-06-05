@@ -3139,8 +3139,10 @@ void LLVOAvatar::idleUpdate(LLAgent &agent, const F64 &time)
 
     checkTextureLoading() ;
 
+    /* <3T:TommyTheTerrible> This is already done in the LLViewerObjectList idle loop and is paced there
     // force immediate pixel area update on avatars using last frames data (before drawable or camera updates)
     setPixelAreaAndAngle(gAgent);
+    */
 
     // force asynchronous drawable update
     if(mDrawable.notNull())
@@ -6671,13 +6673,7 @@ void LLVOAvatar::updateTextures()
         {
             const S32 boost_level = getAvatarBakedBoostLevel();
             imagep = LLViewerTextureManager::staticCastToFetchedTexture(getImage(texture_index,0), true);
-            // <3T:TommyTheTerrible> Migrating away from non-changing resolutions from baked sources 
-            //addBakedTextureStats( imagep, mPixelArea, texel_area_ratio, boost_level );
-            imagep->addTextureStats(mPixelArea / texel_area_ratio);
-            imagep->setBoostLevel(boost_level);
-            imagep->setMaxFaceImportance(1);
-            imagep->processTextureStats();
-            // </3T:TommyTheTerrible>
+            addBakedTextureStats( imagep, mPixelArea, texel_area_ratio, boost_level );
             // <FS:Ansariel> [Legacy Bake]
             // Spam if this is a baked texture, not set to default image, without valid host info
             if (isIndexBakedTexture((ETextureIndex)texture_index)
@@ -6807,6 +6803,10 @@ void LLVOAvatar::addBakedTextureStats( LLViewerFetchedTexture* imagep, F32 pixel
     mMinPixelArea = llmin(pixel_area, mMinPixelArea);
     imagep->addTextureStats(pixel_area / texel_area_ratio);
     imagep->setBoostLevel(boost_level);
+    //<3T:TommyTheTerrible> Setting baked textures to importance of 1 and processing to update mDesiredDiscard
+    imagep->setMaxFaceImportance(1);
+    imagep->processTextureStats();
+    //</3T>
 }
 
 //virtual

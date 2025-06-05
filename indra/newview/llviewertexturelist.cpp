@@ -1009,9 +1009,12 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
     bool for_avatar = (imagep->getBoostLevel() == LLGLTexture::BOOST_AVATAR_BAKED);
     U32 face_count = 0;
     U32 max_faces_to_check = 64;
-    U32 screen_area = (gViewerWindow->getWindowWidthRaw() * gViewerWindow->getWindowHeightRaw());
-    // Add a face if texture is assigned to a particle source so texture not deleted until particle source deleted.
-    face_count += for_particle;
+    bool size_changed = false;
+    // Add a face if texture is assigned to a particle or avatar baked so texture not deleted until source deleted.
+    face_count += for_particle + for_avatar;
+    // Do not check faces if baked texture has no faces, so that value from avatar remains consistent for system avatar.
+    if(check_faces && for_avatar && imagep->getTotalNumFaces() == 0)
+        check_faces = false;
 
     LL_PROFILE_ZONE_SCOPED_CATEGORY_TEXTURE
     {
@@ -1072,13 +1075,13 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
             assign_size = 65536;
         }
         // Assign size to image and find out if a fetch is necessary
-        //      from mMaxVirtualSize changing or discard not correct.
-        needs_fetch = (imagep->addTextureStats(assign_size) ||
-            imagep->getDesiredDiscardLevel() != imagep->getDiscardLevel());
+        size_changed = imagep->addTextureStats(assign_size);
         // Store the importance with the image to use for prioritization later.
         imagep->setMaxFaceImportance(assign_importance);
         imagep->processTextureStats();
     }
+    // If size changed or discard not correct a fetch might be necessary.
+    needs_fetch = (size_changed || imagep->getDesiredDiscardLevel() != imagep->getDiscardLevel());
 
     F32 lazy_flush_timeout = 30.f;  // Delete after n seconds, or 0 to not delete until VRAM threshold reached.
     F32 max_inactive_time  = 30.f;  // Stop making changes to texture after n seconds.
