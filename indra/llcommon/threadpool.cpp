@@ -82,6 +82,10 @@ void LL::ThreadPoolBase::start()
                 LL_INFOS("THREAD") << "Started thread " << tname << LL_ENDL;
                 run(tname);
             });
+        //<3T:TommyTheTerrible> Threads seem to be creating so quickly with the blockingconcurrentqueue
+        //      that LL_INFOS are not completing, so copying out to main thread.
+        LL_INFOS("THREAD") << "Started thread " << tname << LL_ENDL;
+        //</3T>
     }
 
     if (!mAutomaticShutdown)

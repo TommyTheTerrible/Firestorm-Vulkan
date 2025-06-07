@@ -17,6 +17,7 @@
 #include "llinstancetracker.h"
 #include "llinstancetrackersubclass.h"
 #include "threadsafeschedule.h"
+#include "blockingconcurrentqueue.h"
 #include <chrono>
 #include <exception>                // std::current_exception
 #include <functional>               // std::function
@@ -255,8 +256,15 @@ namespace LL
         bool tryPost(const Work&) override;
 
     private:
+        /*<3T:TommyTheTerrible> Refactoring for blockingconcurrentqueue.
         using Queue = LLThreadSafeQueue<Work>;
+        */
+        using Queue = moodycamel::BlockingConcurrentQueue<Work>;
+        //</3T>
         Queue mQueue;
+        //<3T:TommyTheTerrible> Atomic boolean for blockingconcurrentqueue state.
+        std::atomic<bool> mRunning;
+        //</3T>
 
         Work pop_() override;
         bool tryPop_(Work&) override;

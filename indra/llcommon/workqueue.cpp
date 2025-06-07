@@ -138,47 +138,88 @@ void LL::WorkQueueBase::checkCoroutine(const std::string& method)
 LL::WorkQueue::WorkQueue(const std::string& name, size_t capacity):
     super(name),
     mQueue(capacity)
+    //<3T:TommyTheTerrible> Adding atomic boolean for blockingconcurrentqueue state.
+    ,mRunning(true)
+    //</3T>
 {
 }
 
 void LL::WorkQueue::close()
 {
+    /*<3T:TommyTheTerrible> Set the atomic boolean to false so threads will leave their while loops.
     mQueue.close();
+    */
+    mRunning = false;
+    //</3T>
 }
 
 size_t LL::WorkQueue::size()
 {
+    /*<3T:TommyTheTerrible> Return the approximate size of the blockingconcurrentqueue.
     return mQueue.size();
+    */
+    return mQueue.size_approx();
+    //</3T>
 }
 
 bool LL::WorkQueue::isClosed()
 {
+    /*<3T:TommyTheTerrible> Return whether blockingconcurrentqueue state is not running.
     return mQueue.isClosed();
+    */
+    return !mRunning;
+    //</3T>
 }
 
 bool LL::WorkQueue::done()
 {
+    /*<3T:TommyTheTerrible> Return whether blockingconcurrentqueue state is not running and queue is empty.
     return mQueue.done();
+    */
+    return (!mRunning && mQueue.size_approx() == 0);
+    //</3T>
 }
 
 bool LL::WorkQueue::post(const Work& callable)
 {
+    /*<3T:TommyTheTerrible> Add work to blockingconcurrentqueue.
     return mQueue.pushIfOpen(callable);
+    */
+    return mQueue.enqueue(callable);
+    //</3T>
 }
 
 bool LL::WorkQueue::tryPost(const Work& callable)
 {
+    /*<3T:TommyTheTerrible> Try adding work to blockingconcurrentqueue.
     return mQueue.tryPush(callable);
+    */
+    return mQueue.try_enqueue(callable);
+    //</3T>
 }
 
 LL::WorkQueue::Work LL::WorkQueue::pop_()
 {
+    /*<3T:TommyTheTerrible> Wait for work if queue is running, throw interrupt when running state set off.
     return mQueue.pop();
+    */
+    LL::WorkQueue::Work work;
+    while (mRunning.load(std::memory_order_acquire))
+    {
+        if (mQueue.wait_dequeue_timed(work, 1000))
+            return work;
+    }
+    LLTHROW(LLThreadSafeQueueInterrupt());
+    //</3T>
 }
 
 bool LL::WorkQueue::tryPop_(Work& work)
 {
+    /*<3T:TommyTheTerrible> Try retrieving a single work task.
     return mQueue.tryPop(work);
+    */
+    return mQueue.try_dequeue(work);
+    //</3T>
 }
 
 /*****************************************************************************
