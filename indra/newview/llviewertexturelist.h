@@ -231,7 +231,7 @@ public:
 
     bool mForceResetTextureStats;
 
-    std::queue<LLPointer<LLViewerTexture>> mMarkedTextures;
+    std::unordered_set<LLPointer<LLViewerTexture>, vigna_hash> mMarkedTextures;
     std::unordered_set<LLPointer<LLViewerFetchedTexture>, vigna_hash> mFetchingTextures;
     std::atomic<int> aDecodingCount;
 
