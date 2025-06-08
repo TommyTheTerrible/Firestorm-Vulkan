@@ -1078,7 +1078,11 @@ bool LLViewerTextureList::updateImageDecodePriority(LLViewerFetchedTexture *imag
         size_changed = imagep->addTextureStats(assign_size);
         // Store the importance with the image to use for prioritization later.
         imagep->setMaxFaceImportance(assign_importance);
-        imagep->processTextureStats();
+        //<3T:TommyTheTerrible> Moved the processTextureStats into LLViewerFetchedTexture::updateFetch(),
+        //      so that other processes can update the virtual size (avatar idle, face changes, etc.)
+        //      and the texture fetch process will have updated information sooner than waiting for this function.
+        //imagep->processTextureStats();
+        //</3T>
     }
     // If size changed or discard not correct a fetch might be necessary.
     needs_fetch = (size_changed || imagep->getDesiredDiscardLevel() != imagep->getDiscardLevel());

@@ -2003,6 +2003,10 @@ bool LLViewerFetchedTexture::updateFetch()
     {
         return false;
     }
+    //<3T:TommyTheTerrible> Updated the desired discard before checking if fetch is necessary.
+    //      This was originally in LLViewerTextureList::updateImageDecodePriority, which is called less frequently now.
+    processTextureStats();
+    //</3T>
 
     mFetchState = 0;
     mFetchPriority = 0;
