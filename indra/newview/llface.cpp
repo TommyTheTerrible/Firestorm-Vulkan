@@ -326,6 +326,8 @@ void LLFace::setTexture(U32 ch, LLViewerTexture* tex)
     if(tex)
     {
         tex->addFace(ch, this) ;
+        if (tex->getMaxVirtualSize() < getVirtualSize())
+            tex->addTextureStats(getVirtualSize());
     }
 
     mTexture[ch] = tex ;
