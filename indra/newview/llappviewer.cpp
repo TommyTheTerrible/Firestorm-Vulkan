@@ -5725,6 +5725,7 @@ void LLAppViewer::idle()
     {
         LL_PROFILE_ZONE_NAMED_CATEGORY_DISPLAY("Network");
 
+        LL_RECORD_BLOCK_TIME(FTM_NETWORK);
         ////////////////////////////////////////////////
         //
         // Network processing
