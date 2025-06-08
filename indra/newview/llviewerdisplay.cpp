@@ -476,7 +476,6 @@ static LLTrace::BlockTimerStatHandle FTM_RENDER_FRAME_BUFFER("Capture Frame Buff
 static LLTrace::BlockTimerStatHandle FTM_RENDER_UNBIND_TEXTURES("Unbind Textures");
 static LLTrace::BlockTimerStatHandle FTM_RENDER_SHADERS("Shaders");
 static LLTrace::BlockTimerStatHandle FTM_RENDER_SHADERS_OCCULSION("Occulsion Shader");
-static LLTrace::BlockTimerStatHandle FTM_RENDER_UI("Render UI");
 
 // Paint the display!
 void display(bool rebuild, F32 zoom_factor, int subfield, bool for_snapshot)
