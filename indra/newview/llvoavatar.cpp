@@ -3050,6 +3050,11 @@ void LLVOAvatar::dumpAnimationState()
 }
 
 static LLTrace::BlockTimerStatHandle FTM_IDLE_AVATAR_UPDATES("Idle Avatar Updates");
+static LLTrace::BlockTimerStatHandle FTM_IDLE_DRAWABLE_UPDATES("Avatar Drawable Updates");
+static LLTrace::BlockTimerStatHandle FTM_IDLE_AVATAR_ANIMATE("Avatar Animate");
+static LLTrace::BlockTimerStatHandle FTM_IDLE_AVATAR_DETAIL_UPDATES("Avatar Detail");
+static LLTrace::BlockTimerStatHandle FTM_IDLE_AVATAR_NAMETAG("Avatar Nametag and Misc");
+static LLTrace::BlockTimerStatHandle FTM_IDLE_AVATAR_COST_UPDATES("Avatar Render Cost");
 //------------------------------------------------------------------------
 // idleUpdate()
 //------------------------------------------------------------------------
@@ -3147,6 +3152,7 @@ void LLVOAvatar::idleUpdate(LLAgent &agent, const F64 &time)
     // force asynchronous drawable update
     if(mDrawable.notNull())
     {
+        LL_RECORD_BLOCK_TIME(FTM_IDLE_DRAWABLE_UPDATES);
         if (isSitting() && getParent())
         {
             LLViewerObject *root_object = (LLViewerObject*)getRoot();
@@ -3198,26 +3204,33 @@ void LLVOAvatar::idleUpdate(LLAgent &agent, const F64 &time)
     // animate the character
     // store off last frame's root position to be consistent with camera position
     mLastRootPos = mRoot->getWorldPosition();
-    bool detailed_update = updateCharacter(agent);
+    bool detailed_update;
+    {
+        LL_RECORD_BLOCK_TIME(FTM_IDLE_AVATAR_ANIMATE);
+        detailed_update = updateCharacter(agent);
+    }
 
     static LLUICachedControl<bool> visualizers_in_calls("ShowVoiceVisualizersInCalls", false);
     bool voice_enabled = (visualizers_in_calls || LLVoiceClient::getInstance()->inProximalChannel()) &&
                          LLVoiceClient::getInstance()->getVoiceEnabled(mID);
+        
+    {
+        LL_RECORD_BLOCK_TIME(FTM_IDLE_AVATAR_NAMETAG);
+        LLVector3 hud_name_pos = idleCalcNameTagPosition(mLastRootPos);
+        idleUpdateVoiceVisualizer(voice_enabled, hud_name_pos);
+        idleUpdateNameTag(hud_name_pos);
+        idleUpdateMisc(detailed_update);
+        idleUpdateAppearanceAnimation();
+    }
 
-    LLVector3 hud_name_pos = idleCalcNameTagPosition(mLastRootPos);
-
-    idleUpdateVoiceVisualizer(voice_enabled, hud_name_pos);
-    idleUpdateMisc( detailed_update );
-    idleUpdateAppearanceAnimation();
     if (detailed_update)
     {
+        LL_RECORD_BLOCK_TIME(FTM_IDLE_AVATAR_DETAIL_UPDATES);
         idleUpdateLipSync( voice_enabled );
         idleUpdateLoadingEffect();
         idleUpdateBelowWater(); // wind effect uses this
         idleUpdateWindEffect();
     }
-
-    idleUpdateNameTag(hud_name_pos);
 
     // Complexity has stale mechanics, but updates still can be very rapid
     // so spread avatar complexity calculations over frames to lesen load from
@@ -3248,6 +3261,7 @@ void LLVOAvatar::idleUpdate(LLAgent &agent, const F64 &time)
 
     if ((LLFrameTimer::getFrameCount() + mID.mData[0]) % compl_upd_freq == 0)
     {
+        LL_RECORD_BLOCK_TIME(FTM_IDLE_AVATAR_COST_UPDATES);
         // DEPRECATED
         // replace with LLPipeline::profileAvatar?
         // Avatar profile takes ~ 0.5ms while idleUpdateRenderComplexity takes ~5ms
@@ -5706,8 +5720,8 @@ bool LLVOAvatar::updateCharacter(LLAgent &agent)
     //--------------------------------------------------------------------
     if (!needs_update && !isSelf())
     {
-        updateMotions(LLCharacter::HIDDEN_UPDATE);
-        return false;
+       //updateMotions(LLCharacter::HIDDEN_UPDATE);
+       return false;
     }
 
     //--------------------------------------------------------------------
