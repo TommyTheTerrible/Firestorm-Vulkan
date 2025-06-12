@@ -2344,7 +2344,7 @@ void LLScrollListCtrl::copySLURLToClipboard(std::string id, bool is_group)
     LLUrlAction::copyURLToClipboard(slurl);
 }
 
-BOOL LLScrollListCtrl::handleDoubleClick(S32 x, S32 y, MASK mask)
+bool LLScrollListCtrl::handleDoubleClick(S32 x, S32 y, MASK mask)
 {
     //bool handled = false;
     bool handled = handleClick(x, y, mask);
