@@ -199,29 +199,24 @@ protected:
     // Cached pointers to well known joints
     //--------------------------------------------------------------------
 public:
-    LLJoint*        mPelvisp{nullptr};
-    LLJoint*        mTorsop{ nullptr };
-    LLJoint*        mChestp{ nullptr };
-    LLJoint*        mNeckp{ nullptr };
-    LLJoint*        mHeadp{ nullptr };
-    LLJoint*        mSkullp{ nullptr };
-    LLJoint*        mEyeLeftp{ nullptr };
-    LLJoint*        mEyeRightp{ nullptr };
-    LLJoint*        mHipLeftp{ nullptr };
-    LLJoint*        mHipRightp{ nullptr };
-    LLJoint*        mKneeLeftp{ nullptr };
-    LLJoint*        mKneeRightp{ nullptr };
-    LLJoint*        mAnkleLeftp{ nullptr };
-    LLJoint*        mAnkleRightp{ nullptr };
-    LLJoint*        mFootLeftp{ nullptr };
-    LLJoint*        mFootRightp{ nullptr };
-    LLJoint*        mWristLeftp{ nullptr };
-    LLJoint*        mWristRightp{ nullptr };
-    // BD
-    LLJoint*        mShoulderRightp{ nullptr };
-    LLJoint*        mShoulderLeftp{ nullptr };
-    LLJoint*        mElbowRightp{ nullptr };
-    LLJoint*        mElbowLeftp{ nullptr };
+    LLJoint*        mPelvisp;
+    LLJoint*        mTorsop;
+    LLJoint*        mChestp;
+    LLJoint*        mNeckp;
+    LLJoint*        mHeadp;
+    LLJoint*        mSkullp;
+    LLJoint*        mEyeLeftp;
+    LLJoint*        mEyeRightp;
+    LLJoint*        mHipLeftp;
+    LLJoint*        mHipRightp;
+    LLJoint*        mKneeLeftp;
+    LLJoint*        mKneeRightp;
+    LLJoint*        mAnkleLeftp;
+    LLJoint*        mAnkleRightp;
+    LLJoint*        mFootLeftp;
+    LLJoint*        mFootRightp;
+    LLJoint*        mWristLeftp;
+    LLJoint*        mWristRightp;
 
     //--------------------------------------------------------------------
     // XML parse tree

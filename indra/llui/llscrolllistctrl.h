@@ -236,10 +236,7 @@ public:
     void            deleteSingleItem( S32 index );
     void            deleteItems(const LLSD& sd);
     void            deleteSelectedItems();
-    // BD
-    void deleteFlaggedItems();
-
-    void            deselectAllItems(bool no_commit_on_change = false); // by default, go ahead and commit on selection change
+    void            deselectAllItems(BOOL no_commit_on_change = FALSE); // by default, go ahead and commit on selection change
 
     void            clearHighlightedItems();
 
@@ -331,9 +328,9 @@ public:
     S32  getColumnPadding() const               { return mColumnPadding; }
     void setRowPadding(const S32 c)             { mColumnPadding = c; }
     S32  getRowPadding() const                  { return mColumnPadding; }
-    void setCommitOnKeyboardMovement(bool b)    { mCommitOnKeyboardMovement = b; }
-    void setCommitOnSelectionChange(bool b)     { mCommitOnSelectionChange = b; }
-    void setAllowKeyboardMovement(bool b)       { mAllowKeyboardMovement = b; }
+    void setCommitOnKeyboardMovement(BOOL b)    { mCommitOnKeyboardMovement = b; }
+    void setCommitOnSelectionChange(BOOL b)     { mCommitOnSelectionChange = b; }
+    void setAllowKeyboardMovement(BOOL b)       { mAllowKeyboardMovement = b; }
 
     void            setMaxSelectable(U32 max_selected) { mMaxSelectable = max_selected; }
     S32             getMaxSelectable() { return mMaxSelectable; }
@@ -358,9 +355,8 @@ public:
     // </FS:Ansariel> Fix for FS-specific people list (radar)
 
     // support right-click context menus for avatar/group lists
-    enum ContextMenuType { MENU_NONE, MENU_AVATAR, MENU_GROUP, MENU_EXTERNAL };
-    //void setContextMenu(const ContextMenuType &menu) { mContextMenuType = menu; }
-    void setContextMenu(const ContextMenuType& menu, LLContextMenu* new_menup = nullptr);
+    enum ContextMenuType { MENU_NONE, MENU_AVATAR, MENU_GROUP };
+    void setContextMenu(const ContextMenuType &menu) { mContextMenuType = menu; }
     ContextMenuType getContextMenuType() { return mContextMenuType; }
 
     // Overridden from LLView
@@ -431,8 +427,8 @@ public:
     S32             getTotalStaticColumnWidth() { return mTotalStaticColumnWidth; }
 
     std::string     getSortColumnName();
-    bool            getSortAscending() { return mSortColumns.empty() ? true : mSortColumns.back().second; }
-    bool            hasSortOrder() const;
+    BOOL            getSortAscending() { return mSortColumns.empty() ? TRUE : mSortColumns.back().second; }
+    BOOL            hasSortOrder() const;
     void            clearSortOrder();
 
     void            setAlternateSort() { mAlternateSort = true; }
@@ -516,6 +512,7 @@ private:
     static void     showNameDetails(std::string id, bool is_group);
     static void     copyNameToClipboard(std::string id, bool is_group);
     static void     copySLURLToClipboard(std::string id, bool is_group);
+
 
     S32             mLineHeight;    // the max height of a single line
     S32             mScrollLines;   // how many lines we've scrolled down

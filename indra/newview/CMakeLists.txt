@@ -903,10 +903,6 @@ set(viewer_HEADER_FILES
     ao.h
     aoengine.h
     aoset.h
-    bdanimator.h
-    bdfloaterposer.h
-    bdfloaterposecreator.h
-    bdposingmotion.h
     chatbar_as_cmdline.h
     daeexport.h
     dialogstack.h
