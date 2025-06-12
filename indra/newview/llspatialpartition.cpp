@@ -638,7 +638,7 @@ void LLSpatialGroup::updateDistance(LLCamera &camera)
 
         //F32 new_mip = (F32)ceil(log(sqrt(mPixelArea)) / log(2));
         F32 new_mip = (F32)(std::round((log(sqrt(mPixelArea)) / log(2)) * 20) / 20); // Round to 1/5th increments
-        if (mMIPMax && mMIPMax < new_mip && new_mip >= 8) // <TS:3T> Make LOD changes depending on MIP scale
+        if (mMIPMax < new_mip && new_mip >= 8) // <TS:3T> Make LOD changes depending on MIP scale
         {
             if (getSpatialPartition()->mPartitionType != LLViewerRegion::PARTITION_TERRAIN)
             {
