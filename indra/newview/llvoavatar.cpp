@@ -5715,7 +5715,7 @@ bool LLVOAvatar::updateCharacter(LLAgent &agent)
     //--------------------------------------------------------------------
     if (!needs_update && !isSelf())
     {
-       //updateMotions(LLCharacter::HIDDEN_UPDATE);
+       updateMotions(LLCharacter::HIDDEN_UPDATE);
        return false;
     }
 
