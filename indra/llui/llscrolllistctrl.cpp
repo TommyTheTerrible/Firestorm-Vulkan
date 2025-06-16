@@ -3533,7 +3533,7 @@ std::string LLScrollListCtrl::getSortColumnName()
     else return "";
 }
 
-BOOL LLScrollListCtrl::hasSortOrder() const
+bool LLScrollListCtrl::hasSortOrder() const
 {
     return !mSortColumns.empty();
 }

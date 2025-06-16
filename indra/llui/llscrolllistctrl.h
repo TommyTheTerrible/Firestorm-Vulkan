@@ -328,9 +328,9 @@ public:
     S32  getColumnPadding() const               { return mColumnPadding; }
     void setRowPadding(const S32 c)             { mColumnPadding = c; }
     S32  getRowPadding() const                  { return mColumnPadding; }
-    void setCommitOnKeyboardMovement(BOOL b)    { mCommitOnKeyboardMovement = b; }
-    void setCommitOnSelectionChange(BOOL b)     { mCommitOnSelectionChange = b; }
-    void setAllowKeyboardMovement(BOOL b)       { mAllowKeyboardMovement = b; }
+    void setCommitOnKeyboardMovement(bool b)    { mCommitOnKeyboardMovement = b; }
+    void setCommitOnSelectionChange(bool b)     { mCommitOnSelectionChange = b; }
+    void setAllowKeyboardMovement(bool b)       { mAllowKeyboardMovement = b; }
 
     void            setMaxSelectable(U32 max_selected) { mMaxSelectable = max_selected; }
     S32             getMaxSelectable() { return mMaxSelectable; }
@@ -427,8 +427,8 @@ public:
     S32             getTotalStaticColumnWidth() { return mTotalStaticColumnWidth; }
 
     std::string     getSortColumnName();
-    BOOL            getSortAscending() { return mSortColumns.empty() ? TRUE : mSortColumns.back().second; }
-    BOOL            hasSortOrder() const;
+    bool            getSortAscending() { return mSortColumns.empty() ? TRUE : mSortColumns.back().second; }
+    bool            hasSortOrder() const;
     void            clearSortOrder();
 
     void            setAlternateSort() { mAlternateSort = true; }
