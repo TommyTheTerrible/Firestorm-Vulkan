@@ -4064,7 +4064,9 @@ void send_agent_update(bool force_send, bool send_reliable)
     LL_PROFILE_ZONE_SCOPED;
     llassert(!gCubeSnapshot);
 
-    if (gAgent.getTeleportState() != LLAgent::TELEPORT_NONE)
+    LLAgent::ETeleportState tp_state = gAgent.getTeleportState();
+    if (tp_state != LLAgent::TELEPORT_NONE
+        && tp_state != LLAgent::TELEPORT_ARRIVING)
     {
         // We don't care if they want to send an agent update, they're not allowed
         // until the target simulator is ready to receive them
@@ -4242,7 +4244,36 @@ void send_agent_update(bool force_send, bool send_reliable)
     msg->addVector3Fast(_PREHASH_CameraAtAxis, camera_at);
     msg->addVector3Fast(_PREHASH_CameraLeftAxis, LLViewerCamera::getInstance()->getLeftAxis());
     msg->addVector3Fast(_PREHASH_CameraUpAxis, LLViewerCamera::getInstance()->getUpAxis());
-    msg->addF32Fast(_PREHASH_Far, gAgentCamera.mDrawDistance);
+
+    static F32 last_draw_disatance_step = 1024;
+    if (tp_state == LLAgent::TELEPORT_ARRIVING || LLStartUp::getStartupState() < STATE_MISC)
+    {
+        // Inform interest list, prioritize closer area.
+        // Reason: currently server doesn't distance sort attachments, by restricting range
+        // we reduce the number of attachments sent to the viewer, thus prioritizing
+        // closer ones.
+        // Todo: revise and remove once server gets distance sorting.
+        last_draw_disatance_step = llmax((F32)(gAgentCamera.mDrawDistance / 2.f), 50.f);
+        msg->addF32Fast(_PREHASH_Far, last_draw_disatance_step);
+    }
+    else if (last_draw_disatance_step < gAgentCamera.mDrawDistance)
+    {
+        static LLFrameTimer last_step_time;
+        if (last_step_time.getElapsedTimeF32() > 1.f)
+        {
+            // gradually increase draw distance
+            // Idealy this should be not per second, but based on how loaded
+            // mesh thread is, but hopefully this is temporary.
+            last_step_time.reset();
+            F32 step = gAgentCamera.mDrawDistance * 0.1f;
+            last_draw_disatance_step = llmin(last_draw_disatance_step + step, gAgentCamera.mDrawDistance);
+        }
+        msg->addF32Fast(_PREHASH_Far, last_draw_disatance_step);
+    }
+    else
+    {
+        msg->addF32Fast(_PREHASH_Far, gAgentCamera.mDrawDistance);
+    }
 
     msg->addU32Fast(_PREHASH_ControlFlags, control_flags);
 
@@ -6640,6 +6671,7 @@ void process_alert_core(const std::string& message, bool modal)
         if (text.substr(0, restart_cancelled.length()) == restart_cancelled)
         {
             LLFloaterRegionRestarting::close();
+            fs_report_region_restart_to_channel(-1); // <FS:Darl> Announce region restart to a defined chat channel
         }
 
             std::string new_msg =LLNotifications::instance().getGlobalString(text);
@@ -8698,7 +8730,14 @@ void fs_report_region_restart_to_channel(S32 seconds)
         msg->addUUIDFast(_PREHASH_AgentID, gAgent.getID());
         msg->addUUIDFast(_PREHASH_SessionID, gAgent.getSessionID());
         msg->nextBlockFast(_PREHASH_ChatData);
-        msg->addStringFast(_PREHASH_Message, "region_restart_in:" + llformat("%d", seconds));
+        if(seconds >= 0)
+        {
+            msg->addStringFast(_PREHASH_Message, "region_restart_in:" + llformat("%d", seconds));
+        }
+        else // Input is a negative number
+        {
+            msg->addStringFast(_PREHASH_Message, "region_restart_cancelled");
+        }
         msg->addU8Fast(_PREHASH_Type, CHAT_TYPE_WHISPER);
         msg->addS32("Channel", channel);
         gAgent.sendReliableMessage();

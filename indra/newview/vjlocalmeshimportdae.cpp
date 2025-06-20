@@ -28,7 +28,6 @@
 #include "llviewerprecompiledheaders.h"
 
 /* own header */
-#include "vjlocalmesh.h"
 #include "vjlocalmeshimportdae.h"
 
 /* linden headers */
@@ -41,7 +40,6 @@
 /* dae headers*/
 #include <dae.h>
 #include <dom/domConstants.h>
-#include <dom/domMesh.h>
 #include <dom/domSkin.h>
 #include <dom/domGeometry.h>
 #include <dom/domInstance_controller.h>
@@ -471,7 +469,7 @@ bool LLLocalMeshImportDAE::processObject(domMesh* current_mesh, LLLocalMeshObjec
 }
 
 // Function to load the JointMap
-JointMap loadJointMap()
+static JointMap loadJointMap()
 {
     JointMap joint_map = gAgentAvatarp->getJointAliases();
 
@@ -483,7 +481,7 @@ JointMap loadJointMap()
     extra_names.insert(extra_names.end(), more_extra_names.begin(), more_extra_names.end());
 
     // add the extras to jointmap
-    for (auto extra_name : extra_names)
+    for (const auto& extra_name : extra_names)
     {
         joint_map[extra_name] = extra_name;
     }
@@ -673,7 +671,7 @@ bool LLLocalMeshImportDAE::processSkin(daeDatabase* collada_db, daeElement* coll
         {
             LL_DEBUGS("LocalMesh") << "Found internal joint name: " << joint_name << LL_ENDL;
             joint_name = joint_map[joint_name];
-            skininfo.mJointNames.push_back(JointKey::construct(joint_name));
+            skininfo.mJointNames.push_back(joint_name);
             skininfo.mJointNums.push_back(-1);
         }
     };
@@ -753,34 +751,36 @@ bool LLLocalMeshImportDAE::processSkin(daeDatabase* collada_db, daeElement* coll
             }
         }
     }
-
-    int jointname_idx = 0;
-    for (auto jointname_iterator = skininfop->mJointNames.begin(); jointname_iterator != skininfop->mJointNames.end(); ++jointname_iterator, ++jointname_idx)
+    static LLCachedControl<bool> apply_joint_offsets(gSavedSettings, "FSLocalMeshApplyJointOffsets");
+    if (apply_joint_offsets)
     {
-        std::string name_lookup = jointname_iterator->mName;
-        if (joint_map.find(name_lookup) == joint_map.end())
+        int jointname_idx = 0;
+        for (auto jointname_iterator = skininfop->mJointNames.begin(); 
+                jointname_iterator != skininfop->mJointNames.end(); 
+                ++jointname_iterator, ++jointname_idx)
         {
-            pushLog("DAE Importer", "WARNING: Unknown joint named " + name_lookup + " found, skipping over it.");
-            continue;
+            const std::string& name_lookup = *jointname_iterator;
+            if (joint_map.find(name_lookup) == joint_map.end())
+            {
+                pushLog("DAE Importer", "WARNING: Unknown joint named " + name_lookup + " found, skipping over it.");
+                continue;
+            }
+            else
+            {
+                LL_DEBUGS("LocalMesh") << "Calc invBindMat for joint name: " << name_lookup << LL_ENDL;
+            }
+            if (skininfop->mInvBindMatrix.size() <= jointname_idx)
+            {
+                pushLog("DAE Importer", "WARNING: Requesting out of bounds joint named " + name_lookup);
+                break;
+            }
+            LLMatrix4 newinverse = LLMatrix4(skininfop->mInvBindMatrix[jointname_idx].getF32ptr());
+            const auto& joint_translation = joint_transforms[name_lookup].getTranslation();
+            newinverse.setTranslation(joint_translation);
+            skininfop->mAlternateBindMatrix.push_back(LLMatrix4a(newinverse));
         }
-        else
-        {
-            LL_DEBUGS("LocalMesh") << "Calc invBindMat for joint name: " << name_lookup << LL_ENDL;
-        }
-
-        if (skininfop->mInvBindMatrix.size() <= jointname_idx)
-        {
-            // doesn't seem like a critical fail that should invalidate the entire skin, just break and move on?
-            pushLog("DAE Importer", "WARNING: Requesting out of bounds joint named  " + name_lookup);
-            break;
-        }
-
-        LLMatrix4 newinverse = LLMatrix4(skininfop->mInvBindMatrix[jointname_idx].getF32ptr());
-        const auto& joint_translation = joint_transforms[name_lookup].getTranslation();
-        newinverse.setTranslation(joint_translation);
-        skininfop->mAlternateBindMatrix.push_back( LLMatrix4a(newinverse) );
     }
-
+    
     size_t bind_count = skininfop->mAlternateBindMatrix.size();
     if ((bind_count > 0) && (bind_count != skininfop->mJointNames.size()))
     {
@@ -1065,7 +1065,7 @@ bool LLLocalMeshImportDAE::processSkin(daeDatabase* collada_db, daeElement* coll
     return true;
 }
 
-bool LLLocalMeshImportDAE::processSkeletonJoint(domNode* current_node, std::map<std::string, std::string>& joint_map, std::map<std::string, LLMatrix4>& joint_transforms, bool recurse_children)
+bool LLLocalMeshImportDAE::processSkeletonJoint(domNode* current_node, std::map<std::string, std::string, std::less<>>& joint_map, std::map<std::string, LLMatrix4>& joint_transforms, bool recurse_children)
 {
     // safety checks & name check
     const auto node_name = current_node->getName();
@@ -1820,16 +1820,3 @@ void LLLocalMeshImportDAE::pushLog(const std::string& who, const std::string& wh
     mLoadingLog.push_back(log_msg);
     LL_INFOS("LocalMesh") << log_msg << LL_ENDL;
 }
-
-//bool LLLocalMeshImportDAE::readMesh_Polygons(LLLocalMeshFace* data_out, const domPolygonsRef& data_in)
-//{
-    /*
-        i couldn't find any collada files of this type to test on
-        this type may have been deprecated?
-    */
-
-    // ok so.. in here vcount should be a number of polys, EACH poly should have it's own P (array of vtx indices)
-
-    // return false // gotta return a thing
-
-//}

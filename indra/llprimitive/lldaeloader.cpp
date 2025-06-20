@@ -917,7 +917,7 @@ LLDAELoader::LLDAELoader(
     void*               opaque_userdata,
     JointTransformMap&  jointTransformMap,
     JointNameSet&       jointsFromNodes,
-    std::map<std::string, std::string>&     jointAliasMap,
+    std::map<std::string, std::string, std::less<>>&     jointAliasMap,
     U32                 maxJointsPerMesh,
     U32                 modelLimit,
     // <FS:Beq> mesh loader suffix configuration
@@ -1467,10 +1467,7 @@ void LLDAELoader::processDomModel(LLModel* model, DAE* dae, daeElement* root, do
                             {
                                 name = mJointMap[name];
                             }
-//<FS:ND> Query by JointKey rather than just a string, the key can be a U32 index for faster lookup
-//                          model->mSkinInfo.mJointNames.push_back( name );
-                            model->mSkinInfo.mJointNames.push_back( JointKey::construct( name ) );
-// </FS:ND>
+                            model->mSkinInfo.mJointNames.push_back(name);
                             model->mSkinInfo.mJointNums.push_back(-1);
                         }
                     }
@@ -1488,10 +1485,7 @@ void LLDAELoader::processDomModel(LLModel* model, DAE* dae, daeElement* root, do
                                 {
                                     name = mJointMap[name];
                                 }
-//<FS:ND> Query by JointKey rather than just a string, the key can be a U32 index for faster lookup
-//                              model->mSkinInfo.mJointNames.push_back( name );
-                                model->mSkinInfo.mJointNames.push_back( JointKey::construct( name ) );
-// </FS:ND>
+                                model->mSkinInfo.mJointNames.push_back(name);
                                 model->mSkinInfo.mJointNums.push_back(-1);
                             }
                         }
@@ -1508,7 +1502,17 @@ void LLDAELoader::processDomModel(LLModel* model, DAE* dae, daeElement* root, do
                     {
                         domListOfFloats& transform = t->getValue();
                         auto count = transform.getCount()/16;
-
+    
+                        // <FS:Beq> FIRE-34811 Crash during import due to missing inv_bind_matrices.
+                        if (count==0)
+                        {
+                            LL_WARNS("DAELOader") << "Invalid rigged mesh: Missing inv_bind_matrices." << LL_ENDL;
+                            LLSD args;
+                            args["Message"] = "ParsingErrorEmptyInvBindInvalidModel";
+                            mWarningsArray.append(args);
+                            setLoadState( ERROR_PARSING );
+                        }
+                        // </FS:Beq>                        
                         for (size_t k = 0; k < count; ++k)
                         {
                             LLMatrix4 mat;
@@ -1526,17 +1530,21 @@ void LLDAELoader::processDomModel(LLModel* model, DAE* dae, daeElement* root, do
                 }
             }
         }
-
+        // <FS:Beq> FIRE-34811 Crash during import due to missing inv_bind_matrices.
+        if (model->mSkinInfo.mInvBindMatrix.empty())
+        {
+            model->mSkinInfo.mJointNames.clear();
+            model->mSkinInfo.mJointNums.clear();
+            missingSkeletonOrScene = true; // set this true as we've just wiped that data.
+        }
+        // </FS:Beq>
         //Now that we've parsed the joint array, let's determine if we have a full rig
         //(which means we have all the joint sthat are required for an avatar versus
         //a skinned asset attached to a node in a file that contains an entire skeleton,
         //but does not use the skeleton).
         buildJointToNodeMappingFromScene( root );
 
-//<FS:ND> Query by JointKey rather than just a string, the key can be a U32 index for faster lookup
-//      critiqueRigForUploadApplicability( model->mSkinInfo.mJointNames );
-        critiqueRigForUploadApplicability( toStringVector( model->mSkinInfo.mJointNames ) );
-// </FS:ND>
+        critiqueRigForUploadApplicability( model->mSkinInfo.mJointNames );
 
         if ( !missingSkeletonOrScene )
         {
@@ -1589,11 +1597,7 @@ void LLDAELoader::processDomModel(LLModel* model, DAE* dae, daeElement* root, do
         //with the skeleton are not stored in the same order as they are in the exported joint buffer.
         //This remaps the skeletal joints to be in the same order as the joints stored in the model.
 
-//<FS:ND> Query by JointKey rather than just a string, the key can be a U32 index for faster lookup
-        //      std::vector<std::string> ::const_iterator jointIt = model->mSkinInfo.mJointNames.begin();
-        std::vector< std::string > jointNames = toStringVector( model->mSkinInfo.mJointNames );
-        std::vector<std::string> ::const_iterator jointIt = jointNames.begin();
-// </FS:ND>
+        std::vector<std::string> ::const_iterator jointIt = model->mSkinInfo.mJointNames.begin();
 
         const int jointCnt = static_cast<int>(model->mSkinInfo.mJointNames.size());
         for ( int i=0; i<jointCnt; ++i, ++jointIt )

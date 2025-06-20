@@ -56,14 +56,14 @@
     <view_border
      bevel_style="none"
      follows="top|left"
-     height="400"
+     height="437"
      layout="topleft"
      left="10"
      top_pad="-5"
      width="453" />
     <name_list
      follows="left|top"
-     height="400"
+     height="437"
      layout="topleft"
      left_delta="0"
      multi_select="true"
@@ -85,7 +85,7 @@
      left="10"
      name="add_estate_manager_btn"
      top_pad="6"
-     width="114" />
+     width="100" />
     <button
      follows="left|top"
      height="23"
@@ -93,7 +93,24 @@
      layout="topleft"
      name="remove_estate_manager_btn"
      left_pad="6"
-     width="114" />      
+     width="100" />
+    <button
+     follows="left|top"
+     height="23"
+     label="Export..."
+     layout="topleft"
+     name="export_estate_manager_btn"
+     left_pad="6"
+     width="100" />
+    <button
+     follows="left|top"
+     tool_tip="Import a CSV file containing only valid UUIDs - one per line, no extra characters or formatting."
+     height="23"
+     label="Import..."
+     layout="topleft"
+     name="import_estate_manager_btn"
+     left_pad="6"
+     width="100" />
   </panel>
         
         
@@ -157,14 +174,14 @@
     <view_border
      bevel_style="none"
      follows="top|left"
-     height="370"
+     height="410"
      layout="topleft"
      left="10"
      top_pad="-5"
      width="453" />
     <name_list
      follows="left|top"
-     height="370"
+     height="410"
      layout="topleft"
      left_delta="0"
      multi_select="true"
@@ -186,7 +203,7 @@
      left="10"
      name="add_allowed_avatar_btn"
      top_pad="6"
-     width="114" />
+     width="100" />
     <button
      follows="left|top"
      height="23"
@@ -194,7 +211,24 @@
      layout="topleft"
      name="remove_allowed_avatar_btn"
      left_pad="6"
-     width="114" />
+     width="100" />
+    <button
+     follows="left|top"
+     height="23"
+     label="Export..."
+     layout="topleft"
+     name="export_allowed_list_btn"
+     left_pad="6"
+     width="100" />
+    <button
+     follows="left|top"
+     tool_tip="Import a CSV file containing only valid UUIDs - one per line, no extra characters or formatting."
+     height="23"
+     label="Import..."
+     layout="topleft"
+     name="import_allowed_list_btn"
+     left_pad="6"
+     width="100" />
   </panel>
 
   <!-- ============================= ALLOWED GROUPS tab ======================= -->
@@ -256,14 +290,14 @@
     <view_border
      bevel_style="none"
      follows="top|left"
-     height="370"
+     height="410"
      layout="topleft"
      left="10"
      top_pad="-5"
      width="453" />
     <name_list
      follows="left|top"
-     height="370"
+     height="410"
      layout="topleft"
      left_delta="0"
      multi_select="true"
@@ -285,7 +319,7 @@
      left="10"
      name="add_allowed_group_btn"
      top_pad="6"
-     width="114" />
+     width="100" />
     <button
      follows="left|top"
      height="23"
@@ -294,7 +328,26 @@
      name="remove_allowed_group_btn"
      left_pad="6"
      top_delta="0"
-     width="114" />
+     width="100" />
+    <button
+     follows="left|top"
+     height="23"
+     label="Export..."
+     layout="topleft"
+     name="export_allowed_group_btn"
+     left_pad="6"
+     top_delta="0"
+     width="100" />
+    <button
+     follows="left|top"
+     tool_tip="Import a CSV file containing only valid UUIDs - one per line, no extra characters or formatting."
+     height="23"
+     label="Import..."
+     layout="topleft"
+     name="import_allowed_group_btn"
+     left_pad="6"
+     top_delta="0"
+     width="100" />
   </panel>
 
   <!-- ================================ BANNED tab ============================ -->
@@ -356,14 +409,14 @@
     <view_border
      bevel_style="none"
      follows="top|left"
-     height="370"
+     height="410"
      layout="topleft"
      left="10"
      top_pad="-5"
      width="453" />
       <name_list
        follows="left|top"
-       height="370"
+       height="410"
        layout="topleft"
        left_delta="0"
        multi_select="true"
@@ -397,7 +450,7 @@
      left="10"
      name="add_banned_avatar_btn"
      top_pad="6"
-     width="114" />
+     width="100" />
     <button
      follows="left|top"
      height="23"
@@ -406,7 +459,26 @@
      name="remove_banned_avatar_btn"
      left_pad="6"
      top_delta="0"
-     width="114" />
+     width="100" />
+    <button
+     follows="left|top"
+     height="23"
+     label="Export..."
+     layout="topleft"
+     name="export_banned_avatar_btn"
+     left_pad="6"
+     top_delta="0"
+     width="100" />
+    <button
+     follows="left|top"
+     tool_tip="Import a CSV file containing only valid UUIDs - one per line, no extra characters or formatting."
+     height="23"
+     label="Import..."
+     layout="topleft"
+     name="import_banned_avatar_btn"
+     left_pad="6"
+     top_delta="0"
+     width="100" />
   </panel>
 
 

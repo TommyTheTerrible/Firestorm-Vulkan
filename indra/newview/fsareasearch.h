@@ -143,12 +143,14 @@ public:
     void setFilterPhantom(bool b) { mFilterPhantom = b; }
     void setFilterAttachment(bool b) { mFilterAttachment = b; }
     void setFilterMoaP(bool b) { mFilterMoaP = b; }
+    void setFilterReflectionProbe(bool b) { mFilterReflectionProbe = b; }
 
     void setRegexSearch(bool b) { mRegexSearch = b; }
     void setBeacons(bool b) { mBeacons = b; }
 
     void setExcludeAttachment(bool b) { mExcludeAttachment = b; }
     void setExcludetemporary(bool b) { mExcludeTemporary = b; }
+    void setExcludeReflectionProbe(bool b) { mExcludeReflectionProbe = b; }
     void setExcludePhysics(bool b) { mExcludePhysics = b; }
     void setExcludeChildPrims(bool b) { mExcludeChildPrims = b; }
     void setExcludeNeighborRegions(bool b) { mExcludeNeighborRegions = b; }
@@ -232,6 +234,7 @@ private:
 
     bool mExcludeAttachment;
     bool mExcludeTemporary;
+    bool mExcludeReflectionProbe;
     bool mExcludePhysics;
     bool mExcludeChildPrims;
     bool mExcludeNeighborRegions;
@@ -242,6 +245,7 @@ private:
     bool mFilterPhantom;
     bool mFilterAttachment;
     bool mFilterMoaP;
+    bool mFilterReflectionProbe;
 
     bool mFilterForSale;
     S32 mFilterForSaleMin;
@@ -384,6 +388,7 @@ private:
     LLCheckBoxCtrl* mCheckboxLocked;
     LLCheckBoxCtrl* mCheckboxPhantom;
     LLCheckBoxCtrl* mCheckboxMoaP;
+    LLCheckBoxCtrl* mCheckboxReflectionProbe;
     LLCheckBoxCtrl* mCheckboxDistance;
     LLSpinCtrl* mSpinDistanceMinValue;
     LLSpinCtrl* mSpinDistanceMaxValue;
@@ -395,6 +400,7 @@ private:
     LLCheckBoxCtrl* mCheckboxExcludeAttachment;
     LLCheckBoxCtrl* mCheckboxExcludePhysics;
     LLCheckBoxCtrl* mCheckboxExcludetemporary;
+    LLCheckBoxCtrl* mCheckboxExcludeReflectionProbes;
     LLCheckBoxCtrl* mCheckboxExcludeChildPrim;
     LLCheckBoxCtrl* mCheckboxExcludeNeighborRegions;
     LLCheckBoxCtrl* mCheckboxPermCopy;

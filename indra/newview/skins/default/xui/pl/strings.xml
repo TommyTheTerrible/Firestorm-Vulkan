@@ -392,6 +392,18 @@ Jeśli myślisz, że to błąd skontaktuj się z support@secondlife.com
 	<string name="SocialFlickrErrorDisconnecting">
 		Problem z rozłączaniem z Flickr
 	</string>
+	<string name="SocialPrimfeedConnecting">
+		Łączenie z Primfeed...
+	</string>
+	<string name="SocialPrimfeedNotAuthorized">
+		Brak uprawnień...
+	</string>
+	<string name="SocialPrimfeedPosting">
+		Wysyłanie...
+	</string>
+	<string name="SocialPrimfeedErrorPosting">
+		Problem z wysyłaniem na Primfeed
+	</string>
 	<string name="BlackAndWhite">
 		Czerń i biel
 	</string>
@@ -5499,6 +5511,9 @@ Spróbuj załączyć ścieżkę do edytora w cytowaniu.
 	<string name="Command_Poser_Tooltip">
 		Ustaw swojego awatara oraz animowane obiekty
 	</string>
+	<string name="Command_Primfeed_Tooltip">
+		Publikuj bezpośrednio na swoim koncie Primfeed.
+	</string>
 	<string name="Command_360_Capture_Tooltip">
 		Uchwyć równoprostokątny obraz 360°
 	</string>
@@ -6626,5 +6641,17 @@ Twoja aktualna pozycja: [AVATAR_POS]
 	</string>
 	<string name="Unlimited">
 		Bez ograniczeń
+	</string>
+	<string name="ListEmpty">
+		Lista jest pusta
+	</string>
+	<string name="NoValidUUIDs">
+		Nie znaleziono prawidłowych identyfikatorów UUID w importowanym pliku.
+	</string>
+	<string name="ImportListTooLarge">
+		Zbyt wiele rekordów. Plik CSV ma [COUNT] rekordów, ale jest dostępnych [MAX] slotów.
+	</string>
+	<string name="ImportSuccessful">
+		Pomyślnie przetworzono [COUNT] rekordów.
 	</string>
 </strings>

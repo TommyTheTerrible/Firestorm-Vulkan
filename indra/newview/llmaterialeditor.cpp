@@ -546,6 +546,13 @@ bool LLMaterialEditor::postBuild()
         getChild<LLUICtrl>("total_upload_fee")->setTextArg("[FEE]", llformat("%d", 0));
     }
 
+    // <FS:TJ> [FIRE-35544] For disabling texture previews for no-mod materials
+    mBaseColorTextureCtrl->setIsPreviewDisabled(true);
+    mMetallicTextureCtrl->setIsPreviewDisabled(true);
+    mEmissiveTextureCtrl->setIsPreviewDisabled(true);
+    mNormalTextureCtrl->setIsPreviewDisabled(true);
+    // </FS:TJ>
+
     // Todo:
     // Disable/enable setCanApplyImmediately() based on
     // working from inventory, upload or editing inworld
@@ -2866,9 +2873,16 @@ void LLMaterialEditor::importMaterial()
                 {
                     return;
                 }
-                if (filenames.size() > 0)
+                try
                 {
-                    LLMaterialEditor::loadMaterialFromFile(filenames[0], -1);
+                    if (filenames.size() > 0)
+                    {
+                        LLMaterialEditor::loadMaterialFromFile(filenames[0], -1);
+                    }
+                }
+                catch (std::bad_alloc&)
+                {
+                    LLNotificationsUtil::add("CannotOpenFileTooBig");
                 }
             },
         LLFilePicker::FFLOAD_MATERIAL,

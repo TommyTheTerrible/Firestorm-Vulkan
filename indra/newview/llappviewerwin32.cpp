@@ -200,10 +200,10 @@ namespace
            // sBugSplatSender->setDefaultUserDescription(WCSTR(LLError::getFatalMessage()));
             // sBugSplatSender->setAttribute(WCSTR(L"OS"), WCSTR(LLOSInfo::instance().getOSStringSimple())); // In case we ever stop using email for this
             // sBugSplatSender->setAttribute(WCSTR(L"AppState"), WCSTR(LLStartUp::getStartupStateString()));
-            // sBugSplatSender->setAttribute(WCSTR(L"GL Vendor"), WCSTR(gGLManager.mGLVendor));
-            // sBugSplatSender->setAttribute(WCSTR(L"GL Version"), WCSTR(gGLManager.mGLVersionString));
-            // sBugSplatSender->setAttribute(WCSTR(L"GPU Version"), WCSTR(gGLManager.mDriverVersionVendorString));
-            // sBugSplatSender->setAttribute(WCSTR(L"GL Renderer"), WCSTR(gGLManager.mGLRenderer));
+            // sBugSplatSender->setAttribute(WCSTR(L"GLVendor"), WCSTR(gGLManager.mGLVendor));
+            // sBugSplatSender->setAttribute(WCSTR(L"GLVersion"), WCSTR(gGLManager.mGLVersionString));
+            // sBugSplatSender->setAttribute(WCSTR(L"GPUVersion"), WCSTR(gGLManager.mDriverVersionVendorString));
+            // sBugSplatSender->setAttribute(WCSTR(L"GLRenderer"), WCSTR(gGLManager.mGLRenderer));
             // sBugSplatSender->setAttribute(WCSTR(L"VRAM"), WCSTR(STRINGIZE(gGLManager.mVRAM)));
             // sBugSplatSender->setAttribute(WCSTR(L"RAM"), WCSTR(STRINGIZE(gSysMemory.getPhysicalMemoryKB().value())));
 
@@ -644,11 +644,13 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
 // <FS:Beq> Use the Attributes API on Windows to enhance crash metadata
 void LLAppViewerWin32::bugsplatAddStaticAttributes(const LLSD& info)
 {
+    LL_PROFILE_ZONE_SCOPED_CATEGORY_LOGGING;
 #ifdef LL_BUGSPLAT
     auto& bugSplatMap = BugSplatAttributes::instance();
     static bool write_once_after_startup = false;
     if (!write_once_after_startup )
     {
+        LL_PROFILE_ZONE_NAMED("bs-st-att-once")
         // Only write the attributes that are fixed once after we've started.
         // note we might update them more than once and some/many may be empty during startup as we want to catch early crashes
         // once we're started we can assume they don't change for this run.
@@ -689,7 +691,7 @@ void LLAppViewerWin32::bugsplatAddStaticAttributes(const LLSD& info)
     #if LL_DARWIN
         bugSplatMap.setAttribute("HiDPI", info["HIDPI"].asBoolean() ? "Enabled" : "Disabled");
     #endif
-        bugSplatMap.setAttribute("Max Texture Size", gSavedSettings.getString("RenderMaxTextureResolution"));
+        bugSplatMap.setAttribute("Max Texture Size", gSavedSettings.getU32("RenderMaxTextureResolution"));
     }
 
     // These attributes are potentially dynamic
@@ -1022,14 +1024,39 @@ bool LLAppViewerWin32::cleanup()
     return result;
 }
 
-void LLAppViewerWin32::reportCrashToBugsplat(void* pExcepInfo)
+bool LLAppViewerWin32::reportCrashToBugsplat(void* pExcepInfo)
 {
 #if defined(LL_BUGSPLAT)
     if (sBugSplatSender)
     {
         sBugSplatSender->createReport((EXCEPTION_POINTERS*)pExcepInfo);
+        return true;
     }
 #endif // LL_BUGSPLAT
+    return false;
+}
+
+bool LLAppViewerWin32::initWindow()
+{
+    // This is a workaround/hotfix for a change in Windows 11 24H2 (and possibly later)
+    // Where the window width and height need to correctly reflect an available FullScreen size
+    if (gSavedSettings.getBOOL("FullScreen"))
+    {
+        DEVMODE dev_mode;
+        ::ZeroMemory(&dev_mode, sizeof(DEVMODE));
+        dev_mode.dmSize = sizeof(DEVMODE);
+        if (EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &dev_mode))
+        {
+            gSavedSettings.setU32("WindowWidth", dev_mode.dmPelsWidth);
+            gSavedSettings.setU32("WindowHeight", dev_mode.dmPelsHeight);
+        }
+        else
+        {
+            LL_WARNS("AppInit") << "Unable to set WindowWidth and WindowHeight for FullScreen mode" << LL_ENDL;
+        }
+    }
+
+    return LLAppViewer::initWindow();
 }
 
 void LLAppViewerWin32::initLoggingAndGetLastDuration()

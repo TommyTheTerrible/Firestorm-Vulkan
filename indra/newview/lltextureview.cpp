@@ -595,11 +595,13 @@ void LLGLTexMemBar::draw()
     gGL.color4f(0.f, 0.f, 0.f, 0.25f);
     gl_rect_2d(-10, getRect().getHeight() + line_height*2 + 1, getRect().getWidth()+2, getRect().getHeight()+2);
 
-    text = llformat("Est. Free: %d MB Sys Free: %d MB GL Tex: %d MB FBO: %d MB Bias: %.2f Cache: %.1f/%.1f MB mVRAM: %d",
+    text = llformat("Est. Free: %d MB Sys Free: %d MB GL Tex: %d MB FBO: %d MB Probe#: %d Probe Mem: %d MB Bias: %.2f Cache: %.1f/%.1f MB mVRAM: %d",
                     (S32)LLViewerTexture::sFreeVRAMMegabytes,
                     LLMemory::getAvailableMemKB()/1024,
                     LLImageGL::getTextureBytesAllocated() / 1024 / 1024,
                     LLRenderTarget::sBytesAllocated/(1024*1024),
+                    gPipeline.mReflectionMapManager.probeCount(),
+                    gPipeline.mReflectionMapManager.probeMemory(),
                     discard_bias,
                     cache_usage,
                     cache_max_usage,
@@ -725,7 +727,7 @@ void LLGLTexMemBar::draw()
     //text = llformat("Textures: %d Fetch: %d(%d) Pkts:%d(%d) Cache R/W: %d/%d LFS:%d RAW:%d HTP:%d DEC:%d CRE:%d ",
     text = llformat("Tex: %d Fetch: %d(%d) Pkts:%d(%d) CAC R/W: %d/%d LFS:%d RAW:%d HTP:%d DEC:%d CRE:%d FCA:%d ",
     // </FS:Ansariel>
-	// <FS:minerjr> Fixed up the missing variables and converted 64bit size_t's to S32's to allow proper numbers to appear
+    // <FS:minerjr> Fixed up the missing variables and converted 64bit size_t's to S32's to allow proper numbers to appear
                     gTextureList.getNumImages(),
                     (S32)gTextureList.mFetchingTextures.size(), LLAppViewer::getTextureFetch()->getNumDeletes(),
                     LLAppViewer::getTextureFetch()->mPacketCount, LLAppViewer::getTextureFetch()->mBadPacketCount,
@@ -739,7 +741,7 @@ void LLGLTexMemBar::draw()
                     (S32)gTextureList.mCreateTextureList.size(),
                     (S32)gTextureList.mFastCacheList.size());
                     // </FS:Ansariel>
-	// </FS:minerjr>
+    // </FS:minerjr>
     x_right = 550.0f;
     LLFontGL::getFontMonospace()->renderUTF8(text, 0, 0.f, (F32)(v_offset + line_height*3),
                                              text_color, LLFontGL::LEFT, LLFontGL::TOP,
@@ -763,7 +765,7 @@ void LLGLTexMemBar::draw()
     text = llformat("Mesh: Reqs(Tot/Htp/Big): %u/%u/%u Rtr/Err: %u/%u Cread/Cwrite: %u/%u Low/At/High: %d/%d/%d",
                     LLMeshRepository::sMeshRequestCount, LLMeshRepository::sHTTPRequestCount, LLMeshRepository::sHTTPLargeRequestCount,
                     LLMeshRepository::sHTTPRetryCount, LLMeshRepository::sHTTPErrorCount,
-                    LLMeshRepository::sCacheReads, LLMeshRepository::sCacheWrites,
+                    (U32)LLMeshRepository::sCacheReads, (U32)LLMeshRepository::sCacheWrites,
                     LLMeshRepoThread::sRequestLowWater, LLMeshRepoThread::sRequestWaterLevel, LLMeshRepoThread::sRequestHighWater);
     LLFontGL::getFontMonospace()->renderUTF8(text, 0, 0, v_offset + line_height*2,
                                              text_color, LLFontGL::LEFT, LLFontGL::TOP);
