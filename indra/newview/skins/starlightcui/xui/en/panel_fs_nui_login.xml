@@ -52,7 +52,7 @@
   <icon
     height="125"
     width="125"
-    image_name="Transparent"
+    image_name="transparent.j2c"
     left="0"
     top="10"
     name="sl_logo_small" />
