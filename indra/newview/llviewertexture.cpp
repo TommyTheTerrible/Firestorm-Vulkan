@@ -3369,6 +3369,10 @@ void LLViewerLODTexture::processTextureStats()
         restoreBoostLevel();
         // </FS:minerjr>
     }
+    //<3T:TommyTheTerrible> Do not allow desired discard below 0.
+    mDesiredDiscardLevel = llmax(mDesiredDiscardLevel, 0);
+    //</3T>
+
 }
 
 extern LLGLSLShader gCopyProgram;
