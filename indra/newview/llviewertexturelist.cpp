@@ -149,12 +149,9 @@ void LLViewerTextureList::doPreloadImages()
     LLUIImageList* image_list = LLUIImageList::getInstance();
 
     // Fetch default invisible image
-    LLViewerFetchedTexture::sInvisibleImagep = LLViewerTextureManager::getFetchedTexture(IMG_INVISIBLE);
-    LLViewerFetchedTexture::sInvisibleImagep->dontDiscard();
-    LLViewerFetchedTexture::sInvisibleImagep->setCategory(LLGLTexture::OTHER);
-    LLViewerFetchedTexture::sInvisibleImagep->addTextureStats(MAX_IMAGE_AREA);
-    LLViewerFetchedTexture::sInvisibleImagep->processTextureStats();
-    LLViewerFetchedTexture::sInvisibleImagep->updateFetch();
+    LLViewerFetchedTexture::sInvisibleImagep = LLViewerTextureManager::getFetchedTextureFromFile("transparent.j2c",
+        FTT_LOCAL_FILE, MIPMAP_YES, LLViewerFetchedTexture::BOOST_UI, LLViewerTexture::FETCHED_TEXTURE, 0, 0, IMG_INVISIBLE);
+    mImagePreloads.insert(LLViewerFetchedTexture::sInvisibleImagep);
 
     // Set default particle texture
     LLViewerFetchedTexture::sDefaultParticleImagep = LLViewerTextureManager::getFetchedTextureFromFile("pixiesmall.j2c");
